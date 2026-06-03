@@ -36,7 +36,7 @@ export interface ParseResult {
   error?: string;
 }
 
-type Token = { t: "word"; word: Word } | { t: "op"; op: string };
+export type Token = { t: "word"; word: Word } | { t: "op"; op: string };
 
 // ---- 字句解析 ----
 function readCmdSub(s: string, start: number): { cmd: string; next: number } {
@@ -295,8 +295,7 @@ function asAssignment(word: Word): Assignment | null {
 
 const REDIR_OPS: RedirOp[] = [">", ">>", "<", "2>", "2>>", "&>"];
 
-export function parse(input: string): ParseResult {
-  const tokens = tokenize(input);
+export function parseTokens(tokens: Token[]): CommandList {
   const list: CommandList = [];
   let p = 0;
 
@@ -366,7 +365,11 @@ export function parse(input: string): ParseResult {
     }
   }
 
-  return { list };
+  return list;
 }
 
-export { fragText };
+export function parse(input: string): ParseResult {
+  return { list: parseTokens(tokenize(input)) };
+}
+
+export { fragText, tokenize };

@@ -1,6 +1,7 @@
 import type { Environment } from "./Environment";
 import type { VFS } from "../vfs/VFS";
 import { globExpand } from "./glob";
+import { evalArith } from "./arith";
 import type { Frag, Word } from "./parser";
 
 export interface ExpandCtx {
@@ -26,7 +27,12 @@ export function expandVars(text: string, env: Environment): string {
           continue;
         }
       }
-      if (nx === "?" || nx === "$" || nx === "0") {
+      if (nx === "?" || nx === "$" || nx === "0" || nx === "@" || nx === "*" || nx === "#") {
+        out += env.get(nx) ?? "";
+        i += 2;
+        continue;
+      }
+      if (nx >= "1" && nx <= "9") {
         out += env.get(nx) ?? "";
         i += 2;
         continue;
@@ -168,7 +174,11 @@ function expandVariant(word: Word, ctx: ExpandCtx): string[] {
         addSplit(t, true);
       }
     } else {
-      const output = ctx.runSub(frag.command).replace(/\n+$/, "");
+      const trimmed = frag.command.trim();
+      const output =
+        trimmed.startsWith("(") && trimmed.endsWith(")")
+          ? String(evalArith(trimmed.slice(1, -1), ctx.env))
+          : ctx.runSub(frag.command).replace(/\n+$/, "");
       if (frag.quote === "double") addQuoted(output);
       else addSplit(output, true);
     }
@@ -213,5 +223,30 @@ export function expandWord(word: Word, ctx: ExpandCtx): string[] {
   }
   const out: string[] = [];
   for (const v of variants) out.push(...expandVariant(v, ctx));
+  return out;
+}
+
+/** 分割もパス展開もせず、1つの文字列へ展開 (case の対象/パターン, リダイレクト先など)。 */
+export function expandSingle(word: Word, ctx: ExpandCtx): string {
+  let out = "";
+  let first = true;
+  for (const frag of word) {
+    if (frag.kind === "lit") {
+      if (frag.quote === "single") out += frag.text;
+      else if (frag.quote === "double") out += expandVars(frag.text, ctx.env);
+      else {
+        let t = frag.text;
+        if (first) t = tildeExpand(t, ctx.env);
+        out += expandVars(t, ctx.env);
+      }
+    } else {
+      const trimmed = frag.command.trim();
+      out +=
+        trimmed.startsWith("(") && trimmed.endsWith(")")
+          ? String(evalArith(trimmed.slice(1, -1), ctx.env))
+          : ctx.runSub(frag.command).replace(/\n+$/, "");
+    }
+    first = false;
+  }
   return out;
 }

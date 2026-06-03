@@ -5,6 +5,9 @@ export class Environment {
   oldpwd = "/home/guest";
   lastExit = 0;
   umask = 0o022;
+  /** 位置パラメータ $1, $2, ... ($0 は除く) */
+  positional: string[] = [];
+  scriptName = "bash";
   readonly user = "guest";
   readonly host = "cli-dojo";
 
@@ -36,8 +39,14 @@ export class Environment {
       case "$":
         return "4242";
       case "0":
-        return "bash";
+        return this.scriptName;
+      case "#":
+        return String(this.positional.length);
+      case "@":
+      case "*":
+        return this.positional.join(" ");
       default:
+        if (/^[1-9][0-9]*$/.test(name)) return this.positional[parseInt(name, 10) - 1] ?? "";
         return this.vars.get(name);
     }
   }
