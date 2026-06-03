@@ -12,6 +12,8 @@ export interface ShellOptions {
   write: (s: string) => void;
   cols: () => number;
   history: History;
+  /** 複数ペインで共有する VFS。省略時は新規作成。 */
+  vfs?: VFS;
 }
 
 const DEFAULT_ALIASES: Array<[string, string]> = [
@@ -35,7 +37,7 @@ export class Shell {
   private history: History;
 
   constructor(opts: ShellOptions) {
-    this.vfs = buildInitialFS();
+    this.vfs = opts.vfs ?? buildInitialFS();
     this.writeFn = opts.write;
     this.colsFn = opts.cols;
     this.history = opts.history;

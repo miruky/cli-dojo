@@ -1,6 +1,7 @@
 import "./styles/main.css";
 import "./styles/chrome.css";
 import "./styles/terminal.css";
+import "./styles/panes.css";
 import "./styles/lessons.css";
 import { App } from "./app/App";
 

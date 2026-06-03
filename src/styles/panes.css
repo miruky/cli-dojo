@@ -1,0 +1,90 @@
+/* ===== ペイン (ghostty 準拠の分割) ===== */
+.terminal-host {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.terminal-host > * {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pane-split {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+.pane-split-row {
+  flex-direction: row;
+}
+.pane-split-col {
+  flex-direction: column;
+}
+
+.pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.pane-terminal {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 4px 6px 2px;
+  overflow: hidden;
+}
+
+/* 分割が存在するときだけ枠とアクティブ強調を見せる */
+.has-splits .pane {
+  border-color: rgba(120, 140, 200, 0.16);
+  background: rgba(8, 14, 30, 0.22);
+}
+.has-splits .pane-active {
+  border-color: rgba(255, 198, 0, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(255, 198, 0, 0.3),
+    0 0 18px rgba(255, 198, 0, 0.1);
+}
+
+.pane-divider {
+  position: relative;
+  flex: 0 0 7px;
+  background: transparent;
+}
+.pane-divider-v {
+  cursor: col-resize;
+}
+.pane-divider-h {
+  cursor: row-resize;
+}
+.pane-divider::after {
+  content: "";
+  position: absolute;
+  background: rgba(120, 140, 200, 0.2);
+}
+.pane-divider-v::after {
+  left: 50%;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+.pane-divider-h::after {
+  top: 50%;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  transform: translateY(-50%);
+}
