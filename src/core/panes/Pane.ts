@@ -5,6 +5,7 @@ import type { History } from "../terminal/History";
 import { Shell } from "../shell/Shell";
 import type { VFS } from "../vfs/VFS";
 import { TmuxSession } from "../modes/tmux/TmuxSession";
+import { VimEditor } from "../modes/vim/VimEditor";
 
 let nextId = 1;
 
@@ -12,6 +13,13 @@ export interface AppInstance {
   el: HTMLElement;
   fit(): void;
   focus(): void;
+  dispose(): void;
+}
+
+/** 端末を占有するエディタ系モード (vim/emacs)。 */
+export interface EditorApp {
+  onData(data: string): void;
+  fit(): void;
   dispose(): void;
 }
 
@@ -33,6 +41,7 @@ export class Pane {
   private mounted = false;
   private pendingApp: { name: string; args: string[] } | null = null;
   private currentApp: AppInstance | null = null;
+  private currentEditor: EditorApp | null = null;
 
   constructor(opts: PaneOptions) {
     this.opts = opts;
@@ -80,7 +89,7 @@ export class Pane {
 
   /** モードボタン等から起動 (シェルコマンドを介さず)。 */
   launchMode(name: string): void {
-    if (this.currentApp) return;
+    if (this.currentApp || this.currentEditor) return;
     if (this.launch(name, [])) return;
     this.editor.systemNotice(`${name}: このモードは順次実装します (現状: tmux が利用可能)。`);
   }
@@ -88,13 +97,14 @@ export class Pane {
   /** モードを抜けてシェルへ戻る。 */
   exitMode(): void {
     if (this.currentApp) this.exitApp();
+    else if (this.currentEditor) this.exitEditor();
   }
 
   isInApp(): boolean {
-    return this.currentApp != null;
+    return this.currentApp != null || this.currentEditor != null;
   }
 
-  private launch(name: string, _args: string[]): boolean {
+  private launch(name: string, args: string[]): boolean {
     if (name === "tmux") {
       const session = new TmuxSession({
         history: this.opts.history,
@@ -109,6 +119,21 @@ export class Pane {
       session.focus();
       return true;
     }
+    if (name === "vim" || name === "nvim" || name === "vi") {
+      const editor = new VimEditor({
+        term: this.terminal,
+        vfs: this.opts.vfs,
+        cwd: this.shell.env.cwd,
+        args,
+        flavor: name === "nvim" ? "nvim" : "vim",
+        onExit: () => this.exitEditor(),
+      });
+      this.currentEditor = editor;
+      this.terminal.setDataHandler((d) => editor.onData(d));
+      editor.start();
+      this.terminal.focus();
+      return true;
+    }
     return false;
   }
 
@@ -119,6 +144,17 @@ export class Pane {
       this.currentApp = null;
     }
     this.host.style.display = "";
+    this.terminal.fit();
+    this.editor.prompt();
+    this.terminal.focus();
+  }
+
+  private exitEditor(): void {
+    if (this.currentEditor) {
+      this.currentEditor.dispose();
+      this.currentEditor = null;
+    }
+    this.terminal.setDataHandler((d) => this.editor.onData(d));
     this.terminal.fit();
     this.editor.prompt();
     this.terminal.focus();
@@ -138,7 +174,10 @@ export class Pane {
 
   fit(): void {
     if (this.currentApp) this.currentApp.fit();
-    else this.terminal.fit();
+    else if (this.currentEditor) {
+      this.terminal.fit();
+      this.currentEditor.fit();
+    } else this.terminal.fit();
   }
   focus(): void {
     if (this.currentApp) this.currentApp.focus();

@@ -64,6 +64,10 @@ export class TerminalView {
     return this.term.cols;
   }
 
+  get rows(): number {
+    return this.term.rows;
+  }
+
   banner(): void {
     const t = this.term;
     t.writeln("");
