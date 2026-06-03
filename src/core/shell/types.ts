@@ -12,6 +12,8 @@ export interface ShellServices {
   listCommands(): CommandInfo[];
   cols(): number;
   aliases(): Map<string, string>;
+  /** 単一コマンドを argv 指定で実行し出力を捕捉 (find -exec / xargs 用)。 */
+  runArgv(argv: string[], stdin: string): { stdout: string; stderr: string; code: number };
 }
 
 export interface ExecContext {

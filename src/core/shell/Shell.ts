@@ -3,7 +3,7 @@ import { buildInitialFS } from "../vfs/seed";
 import { Environment } from "./Environment";
 import { Executor, type ExecIO } from "./Executor";
 import { allCommands, buildRegistry } from "./commands";
-import type { Command, ShellServices } from "./types";
+import type { Command, ExecContext, ShellServices } from "./types";
 import type { History } from "../terminal/History";
 import type { CompletionResult } from "../terminal/LineEditor";
 import { blue, green } from "../terminal/ansi";
@@ -45,6 +45,36 @@ export class Shell {
       listCommands: () => allCommands.map((c) => ({ name: c.name, summary: c.summary })),
       cols: () => this.colsFn(),
       aliases: () => this.aliases,
+      runArgv: (argv, stdin) => {
+        const impl = this.registry.get(argv[0]);
+        if (!impl) return { stdout: "", stderr: `${argv[0]}: command not found\n`, code: 127 };
+        let out = "";
+        let err = "";
+        const ctx2: ExecContext = {
+          vfs: this.vfs,
+          env: this.env,
+          args: argv,
+          stdin,
+          out: (s) => {
+            out += s;
+          },
+          err: (s) => {
+            err += s;
+          },
+          services,
+          cols: this.colsFn(),
+          tty: false,
+          resolve: (p) => this.vfs.resolve(this.env.cwd, p),
+        };
+        let code = 0;
+        try {
+          code = impl.run(ctx2);
+        } catch (e) {
+          err += (e as Error).message + "\n";
+          code = 1;
+        }
+        return { stdout: out, stderr: err, code };
+      },
     };
     this.executor = new Executor(this.vfs, this.env, this.registry, services, this.aliases);
   }
