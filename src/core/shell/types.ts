@@ -14,6 +14,8 @@ export interface ShellServices {
   aliases(): Map<string, string>;
   /** 単一コマンドを argv 指定で実行し出力を捕捉 (find -exec / xargs 用)。 */
   runArgv(argv: string[], stdin: string): { stdout: string; stderr: string; code: number };
+  /** 対話アプリ(tmux/vim/emacs 等)の起動を要求 (ペインがモードに切替える)。 */
+  launch(name: string, args: string[]): void;
 }
 
 export interface ExecContext {

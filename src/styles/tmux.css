@@ -1,0 +1,68 @@
+/* ===== tmux モード ===== */
+.tmux-session {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.tmux-content {
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.tmux-content > * {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tmux-status {
+  flex: 0 0 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  background: #2c9d52;
+  color: #06210f;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+}
+.tmux-session-name {
+  font-weight: 700;
+  color: #06210f;
+}
+.tmux-tabs {
+  display: flex;
+  align-items: center;
+}
+.tmux-tab {
+  color: #0a3a1e;
+}
+.tmux-tab-active {
+  background: #ffc600;
+  color: #1a1200;
+  font-weight: 700;
+  border-radius: 3px;
+}
+.tmux-spacer {
+  flex: 1 1 auto;
+}
+.tmux-status-right {
+  color: #0a3a1e;
+}
+.tmux-status.tmux-cmd {
+  background: #ffc600;
+}
+.tmux-cmd-prompt {
+  font-weight: 700;
+  color: #1a1200;
+}
+.tmux-cmd-text {
+  color: #1a1200;
+}

@@ -14,6 +14,8 @@ export interface ShellOptions {
   history: History;
   /** 複数ペインで共有する VFS。省略時は新規作成。 */
   vfs?: VFS;
+  /** 対話アプリ起動要求 (tmux/vim/emacs ...) */
+  onLaunch?: (name: string, args: string[]) => void;
 }
 
 const DEFAULT_ALIASES: Array<[string, string]> = [
@@ -47,6 +49,7 @@ export class Shell {
       listCommands: () => allCommands.map((c) => ({ name: c.name, summary: c.summary })),
       cols: () => this.colsFn(),
       aliases: () => this.aliases,
+      launch: (name, args) => opts.onLaunch?.(name, args),
       runArgv: (argv, stdin) => {
         const impl = this.registry.get(argv[0]);
         if (!impl) return { stdout: "", stderr: `${argv[0]}: command not found\n`, code: 127 };

@@ -14,6 +14,7 @@ import { hashingCommands } from "./hashing";
 import { archiveCommands } from "./archives";
 import { simCommands } from "./sims";
 import { scriptingCommands } from "./scripting";
+import { launcherCommands } from "./launchers";
 
 const egrep: Command = { name: "egrep", summary: "grep -E と同じ", run: grep.run };
 const fgrep: Command = { name: "fgrep", summary: "grep -F と同じ", run: grep.run };
@@ -36,6 +37,7 @@ export const allCommands: Command[] = [
   ...archiveCommands,
   ...simCommands,
   ...scriptingCommands,
+  ...launcherCommands,
 ];
 
 export function buildRegistry(): Map<string, Command> {

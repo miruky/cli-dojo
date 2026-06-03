@@ -5,7 +5,7 @@ import { PaneManager } from "../core/panes/PaneManager";
 import { LessonsScreen } from "../views/LessonsScreen";
 import { buildChrome, type Chrome } from "../ui/chrome";
 import { SideMenu } from "../ui/SideMenu";
-import { MODES, type ModeId } from "../core/modes/types";
+import { type ModeId } from "../core/modes/types";
 
 /** アプリ全体のオーケストレーション。各部品を結線する。 */
 export class App {
@@ -75,12 +75,16 @@ export class App {
     this.modes.set(mode);
     this.router.go("terminal");
     this.menu.hide();
-    if (!wasSame && mode !== "linux") {
-      const meta = MODES[mode];
-      this.panes.activePane.notice(
-        `${meta.label} モードに切替えました (挙動は後続フェーズで有効化)。`,
+    const pane = this.panes.activePane;
+    if (mode === "linux") {
+      pane.exitMode();
+    } else if (mode === "tmux" || mode === "nvim" || mode === "emacs") {
+      pane.launchMode(mode);
+    } else if (mode === "ghostty" && !wasSame && !pane.isInApp()) {
+      pane.notice(
+        "Ghostty: ペイン分割 ctrl+shift+v(右)/ctrl+shift+h(下), 移動 ctrl+h/j/k/l, 閉じる ctrl+x, リサイズ ctrl+,/./;/'",
       );
     }
-    this.panes.activePane.focus();
+    pane.focus();
   }
 }

@@ -4,8 +4,16 @@ import { LineEditor } from "../terminal/LineEditor";
 import type { History } from "../terminal/History";
 import { Shell } from "../shell/Shell";
 import type { VFS } from "../vfs/VFS";
+import { TmuxSession } from "../modes/tmux/TmuxSession";
 
 let nextId = 1;
+
+export interface AppInstance {
+  el: HTMLElement;
+  fit(): void;
+  focus(): void;
+  dispose(): void;
+}
 
 export interface PaneOptions {
   history: History;
@@ -13,7 +21,7 @@ export interface PaneOptions {
   onFocusRequest: (pane: Pane) => void;
 }
 
-/** 1つのペイン = 独立したシェルセッション (端末 + シェル + 行編集)。VFS は共有。 */
+/** 1つのペイン = 独立したシェルセッション。モード(tmux等)をホストできる。VFS は共有。 */
 export class Pane {
   readonly id = nextId++;
   readonly el: HTMLElement;
@@ -23,6 +31,8 @@ export class Pane {
   private host: HTMLElement;
   private opts: PaneOptions;
   private mounted = false;
+  private pendingApp: { name: string; args: string[] } | null = null;
+  private currentApp: AppInstance | null = null;
 
   constructor(opts: PaneOptions) {
     this.opts = opts;
@@ -41,6 +51,9 @@ export class Pane {
       cols: () => this.terminal.cols,
       history: this.opts.history,
       vfs: this.opts.vfs,
+      onLaunch: (name, args) => {
+        this.pendingApp = { name, args };
+      },
     });
     this.editor = new LineEditor(this.terminal.term, {
       prompt: () => this.shell.prompt(),
@@ -55,11 +68,65 @@ export class Pane {
 
   private onCommand(line: string): void {
     if (line.trim() !== "") this.shell.run(line);
+    const a = this.pendingApp;
+    this.pendingApp = null;
+    if (a) {
+      if (this.launch(a.name, a.args)) return;
+      this.editor.systemNotice(`${a.name}: このモードは順次実装します (現状: tmux が利用可能)。`);
+      return;
+    }
     this.editor.prompt();
+  }
+
+  /** モードボタン等から起動 (シェルコマンドを介さず)。 */
+  launchMode(name: string): void {
+    if (this.currentApp) return;
+    if (this.launch(name, [])) return;
+    this.editor.systemNotice(`${name}: このモードは順次実装します (現状: tmux が利用可能)。`);
+  }
+
+  /** モードを抜けてシェルへ戻る。 */
+  exitMode(): void {
+    if (this.currentApp) this.exitApp();
+  }
+
+  isInApp(): boolean {
+    return this.currentApp != null;
+  }
+
+  private launch(name: string, _args: string[]): boolean {
+    if (name === "tmux") {
+      const session = new TmuxSession({
+        history: this.opts.history,
+        vfs: this.opts.vfs,
+        onExit: () => this.exitApp(),
+      });
+      this.currentApp = session;
+      this.host.style.display = "none";
+      this.el.appendChild(session.el);
+      session.start();
+      session.fit();
+      session.focus();
+      return true;
+    }
+    return false;
+  }
+
+  private exitApp(): void {
+    if (this.currentApp) {
+      this.currentApp.dispose();
+      this.currentApp.el.remove();
+      this.currentApp = null;
+    }
+    this.host.style.display = "";
+    this.terminal.fit();
+    this.editor.prompt();
+    this.terminal.focus();
   }
 
   /** レッスンの「Try」などから外部入力を流し込む。 */
   runCommand(line: string): void {
+    if (this.currentApp) return;
     this.terminal.term.write(line + "\r\n");
     if (line.trim() !== "") this.shell.run(line);
     this.editor.prompt();
@@ -70,10 +137,12 @@ export class Pane {
   }
 
   fit(): void {
-    this.terminal.fit();
+    if (this.currentApp) this.currentApp.fit();
+    else this.terminal.fit();
   }
   focus(): void {
-    this.terminal.focus();
+    if (this.currentApp) this.currentApp.focus();
+    else this.terminal.focus();
   }
   notice(text: string): void {
     this.editor.systemNotice(text);
