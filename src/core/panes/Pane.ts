@@ -175,11 +175,18 @@ export class Pane {
     this.terminal.focus();
   }
 
-  /** レッスンの「Try」などから外部入力を流し込む。 */
+  /** レッスンの「Try」などから外部入力を流し込む。モード起動コマンドにも対応。 */
   runCommand(line: string): void {
-    if (this.currentApp) return;
+    if (this.currentApp || this.currentEditor) return;
     this.terminal.term.write(line + "\r\n");
     if (line.trim() !== "") this.shell.run(line);
+    const a = this.pendingApp;
+    this.pendingApp = null;
+    if (a) {
+      if (this.launch(a.name, a.args)) return;
+      this.editor.systemNotice(`${a.name}: このモードは順次実装します (現状: tmux が利用可能)。`);
+      return;
+    }
     this.editor.prompt();
   }
 

@@ -11,7 +11,7 @@ import { type ModeId } from "../core/modes/types";
 export class App {
   private modes = new ModeManager();
   private router = new Router();
-  private lessons = new LessonsScreen();
+  private lessons!: LessonsScreen;
   private history = new History("cli-dojo.history");
   private chrome!: Chrome;
   private menu!: SideMenu;
@@ -30,6 +30,7 @@ export class App {
     this.panes = new PaneManager(this.chrome.terminalHost, this.history, {
       onActiveChange: () => this.exposeHook(),
     });
+    this.lessons = new LessonsScreen({ onTry: (cmd) => this.tryCommand(cmd) });
     this.lessons.mount(this.chrome.lessonsHost);
 
     this.router.changed.on((view) => {
@@ -56,6 +57,13 @@ export class App {
     });
 
     this.exposeHook();
+  }
+
+  private tryCommand(cmd: string): void {
+    this.router.go("terminal");
+    const pane = this.panes.activePane;
+    pane.runCommand(cmd);
+    pane.focus();
   }
 
   private exposeHook(): void {
