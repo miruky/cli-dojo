@@ -27,11 +27,21 @@ npm run preview  # ビルド結果のプレビュー
 - [@xterm/xterm](https://xtermjs.org/) — ブラウザ端末
 - GitHub Actions → GitHub Pages 自動デプロイ
 
-## ロードマップ（フェーズ）
+## 実装済み機能
 
-Phase 0 足場/デプロイ · 1 デザイン · 2 Readline · 3 仮想FS+シェル ·
-4 テキスト処理/正規表現 · 5 LPIC-3 の幅 · 6 ペイン(ghostty) ·
-7 tmux · 8 Neovim · 9 Emacs · 10 レッスン · 11 採点/仕上げ
+- **本物のシェル**: 仮想FS上で 80+ コマンド (ls/grep/sed/awk/find/tar/chmod/systemctl…)、
+  パイプ・リダイレクト・`&&`/`||`・glob・ブレース・コマンド置換・`$(())` 算術。
+- **シェルスクリプト**: if/for/while/until/case/関数/`[ ]`/`[[ ]]`/`$1..$@`/`source`/`./x.sh`。
+- **テキスト処理/正規表現**: grep(BRE/ERE/POSIX)、sed(hold/分岐)、awk(処理系)。
+- **LPIC-3 の幅**: 権限・プロセス・ネットワーク・パッケージ・systemd・openssl・暗号ハッシュ。
+- **ペイン (Ghostty 準拠)**: ctrl+h/j/k/l 移動, ctrl+shift+v/h 分割, ctrl+x 閉じる, リサイズ。
+- **tmux モード**: prefix Ctrl-b でウィンドウ/ペイン多重化、ステータスバー。
+- **Neovim モード**: モーダル編集・モーション・オペレータ・Ex・検索・相対行番号。
+- **Emacs モード**: C-x プレフィックス・kill ring・mark/region・isearch・ミニバッファ。
+- **レッスン/チートシート**: 検索可能なリファレンス + 「Try」で端末へ送信。
+- **キーバインド早見表**: 右上の `?` から全モードのキー一覧。
+
+すべて Phase 0〜11 として段階的に実装・デプロイ済み。
 
 ---
 

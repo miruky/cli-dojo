@@ -224,3 +224,19 @@
 .lesson-item.is-keys .lesson-cmd {
   color: var(--fg);
 }
+
+@media (max-width: 680px) {
+  .lessons-layout {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lessons-nav {
+    flex: 0 0 auto;
+    max-height: 132px;
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .lesson-item {
+    flex-wrap: wrap;
+  }
+}

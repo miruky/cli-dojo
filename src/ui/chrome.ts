@@ -13,7 +13,7 @@ export interface Chrome {
 
 export function buildChrome(
   app: HTMLElement,
-  opts: { onHamburger: () => void },
+  opts: { onHamburger: () => void; onHelp: () => void },
 ): Chrome {
   const hamburgerBtn = el(
     "button",
@@ -42,10 +42,18 @@ export function buildChrome(
     el("span", { class: "brand-name", text: "cli-dojo" }),
   ]);
 
+  const helpBtn = el("button", {
+    class: "help-btn",
+    text: "?",
+    attrs: { type: "button", "aria-label": "キーバインドヘルプ", title: "キーバインド早見表" },
+    on: { click: () => opts.onHelp() },
+  });
+
   const topbar = el("header", { class: "topbar" }, [
     hamburgerBtn,
     brand,
     el("div", { class: "spacer" }),
+    helpBtn,
     modeIndicator,
   ]);
 

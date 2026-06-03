@@ -10,5 +10,12 @@ export default defineConfig({
     outDir: "dist",
     target: "es2022",
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          xterm: ["@xterm/xterm", "@xterm/addon-fit"],
+        },
+      },
+    },
   },
 });

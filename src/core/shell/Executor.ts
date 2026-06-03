@@ -19,6 +19,25 @@ export interface ExecIO {
   printErr: (s: string) => void;
 }
 
+/** Damerau-Levenshtein (隣接文字の入れ替えを距離1として扱う)。 */
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const d: number[][] = Array.from({ length: m + 1 }, () => new Array<number>(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) d[i][0] = i;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[m][n];
+}
+
 const SIGNAL_BUILTINS = new Set(["return", "break", "continue", "exit"]);
 const SCRIPT_BUILTINS = new Set(["source", ".", "eval", "bash", "sh"]);
 const SIMPLE_BUILTINS = new Set(["local", "shift", "set", "read", "declare", "typeset"]);
@@ -276,6 +295,21 @@ export class Executor {
     return this.vfs.resolve(this.env.cwd, p);
   }
 
+  private suggest(name: string): string | null {
+    if (name.length < 2) return null;
+    let best: string | null = null;
+    let bestD = 3;
+    for (const c of [...this.registry.keys(), ...this.aliases.keys()]) {
+      if (Math.abs(c.length - name.length) > 2) continue;
+      const d = levenshtein(name, c);
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    return best;
+  }
+
   private writeFile(abs: string, content: string, append: boolean): boolean {
     const lst = this.vfs.lstat(abs);
     if (lst && lst.type === "dir") return false;
@@ -359,7 +393,8 @@ export class Executor {
         if (!impl) {
           // prefix-assign を戻して command not found
           for (const [k, v] of saved) (v === undefined ? this.env.unset(k) : this.env.set(k, v));
-          io.printErr(`${name}: command not found\n`);
+          const hint = this.suggest(name);
+          io.printErr(`${name}: command not found${hint ? ` (もしかして: ${hint}?)` : ""}\n`);
           return { code: 127, stdout: "" };
         }
         const ctx: ExecContext = {

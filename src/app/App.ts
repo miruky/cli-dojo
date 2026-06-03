@@ -5,6 +5,7 @@ import { PaneManager } from "../core/panes/PaneManager";
 import { LessonsScreen } from "../views/LessonsScreen";
 import { buildChrome, type Chrome } from "../ui/chrome";
 import { SideMenu } from "../ui/SideMenu";
+import { HelpOverlay } from "../ui/HelpOverlay";
 import { type ModeId } from "../core/modes/types";
 
 /** アプリ全体のオーケストレーション。各部品を結線する。 */
@@ -16,9 +17,13 @@ export class App {
   private chrome!: Chrome;
   private menu!: SideMenu;
   private panes!: PaneManager;
+  private help = new HelpOverlay();
 
   mount(appEl: HTMLElement): void {
-    this.chrome = buildChrome(appEl, { onHamburger: () => this.menu.toggle() });
+    this.chrome = buildChrome(appEl, {
+      onHamburger: () => this.menu.toggle(),
+      onHelp: () => this.help.toggle(),
+    });
     this.menu = new SideMenu(this.chrome.hamburgerBtn, {
       onSelectView: (view) => {
         this.router.go(view);
@@ -53,7 +58,10 @@ export class App {
     this.menu.setActiveMode(this.modes.id);
 
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") this.menu.hide();
+      if (e.key === "Escape") {
+        this.menu.hide();
+        this.help.hide();
+      }
     });
 
     this.exposeHook();
