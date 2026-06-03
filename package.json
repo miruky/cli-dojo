@@ -1,0 +1,21 @@
+{
+  "name": "cli-dojo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ブラウザ完結型 CLI 練習道場 — Linux / Ghostty / tmux / Neovim / Emacs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}

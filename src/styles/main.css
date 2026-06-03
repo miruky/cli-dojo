@@ -1,0 +1,93 @@
+/* =========================================================
+   cli-dojo — グローバルテーマ (Cobalt Next 風 + ガラス透過)
+   実機 ghostty: background-opacity 0.8 / blur 20 を web で再現
+   ========================================================= */
+:root {
+  color-scheme: dark;
+
+  /* ベースカラー (Cobalt Next 系のディープネイビー) */
+  --bg-0: #060a16;
+  --bg-1: #0a1228;
+  --panel: rgba(8, 14, 30, 0.55);
+  --panel-border: rgba(120, 140, 200, 0.18);
+
+  /* アクセント */
+  --accent: #ffc600; /* cobalt yellow */
+  --accent-blue: #0088ff;
+  --accent-cyan: #18b3c7;
+  --accent-green: #3ad900;
+  --accent-magenta: #fb94ff;
+  --fg: #d6e0f5;
+  --fg-dim: #8a93ad;
+
+  --font-mono: "HackGen Console NF", "HackGen Console", "HackGen35 Console NF",
+    ui-monospace, "SFMono-Regular", Menlo, Consolas, "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  overflow: hidden;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  background: radial-gradient(
+      1200px 800px at 15% -10%,
+      rgba(0, 136, 255, 0.2),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 700px at 110% 10%,
+      rgba(251, 148, 255, 0.14),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 900px at 50% 120%,
+      rgba(24, 179, 199, 0.16),
+      transparent 60%
+    ),
+    linear-gradient(160deg, var(--bg-1), var(--bg-0));
+}
+
+#app {
+  position: fixed;
+  inset: 14px;
+  padding: 16px 14px 12px;
+  border-radius: 14px;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--panel-border);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+/* xterm をガラスパネルに溶け込ませる (背景は #app 側で表現) */
+.xterm,
+.xterm .xterm-viewport,
+.xterm .xterm-screen {
+  background: transparent !important;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 10px;
+}
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(120, 140, 200, 0.25);
+  border-radius: 6px;
+}
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 140, 200, 0.4);
+}
