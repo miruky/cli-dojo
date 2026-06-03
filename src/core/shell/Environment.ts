@@ -4,6 +4,7 @@ export class Environment {
   cwd = "/home/guest";
   oldpwd = "/home/guest";
   lastExit = 0;
+  umask = 0o022;
   readonly user = "guest";
   readonly host = "cli-dojo";
 
