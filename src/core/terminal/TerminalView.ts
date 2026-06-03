@@ -70,9 +70,12 @@ export class TerminalView {
     t.writeln("  " + yellow("cli-dojo") + "  " + dim("— ターミナル練習道場"));
     t.writeln("  " + dim("Linux · Ghostty · tmux · Neovim · Emacs を一つの画面で"));
     t.writeln("");
-    t.writeln("  " + dim("左上の ☰ メニューからモード切替 / レッスンへ移動できます。"));
-    t.writeln("  " + dim("矢印・Ctrl-A/E/K/U/W・↑↓履歴・Ctrl-R 検索・Tab 補完が使えます。"));
-    t.writeln("  " + dim("実シェルは Phase 3 以降で順次有効化されます。"));
+    t.writeln("  " + dim("本物のシェルが動きます。まずは試してみましょう:"));
+    t.writeln(
+      "    " + yellow("ls -la") + dim("   ") + yellow("cat README.txt") + dim("   ") +
+        yellow("cd projects") + dim("   ") + yellow("help"),
+    );
+    t.writeln("  " + dim("左上の ☰ からモード切替 / レッスンへ。Tab 補完・↑↓履歴・Ctrl-R 検索対応。"));
     t.writeln("");
   }
 }
