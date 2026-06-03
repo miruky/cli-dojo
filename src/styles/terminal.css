@@ -1,0 +1,21 @@
+.screen-terminal {
+  padding: 8px 10px 6px;
+}
+.terminal-host {
+  width: 100%;
+  height: 100%;
+}
+
+/* xterm をガラスパネルに溶け込ませる (背景は #app 側のブラーで表現) */
+.xterm,
+.xterm .xterm-viewport,
+.xterm .xterm-screen {
+  background: transparent !important;
+}
+.xterm .xterm-viewport::-webkit-scrollbar {
+  width: 10px;
+}
+.xterm .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(120, 140, 200, 0.25);
+  border-radius: 6px;
+}
