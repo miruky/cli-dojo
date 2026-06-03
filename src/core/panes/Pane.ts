@@ -6,6 +6,7 @@ import { Shell } from "../shell/Shell";
 import type { VFS } from "../vfs/VFS";
 import { TmuxSession } from "../modes/tmux/TmuxSession";
 import { VimEditor } from "../modes/vim/VimEditor";
+import { EmacsEditor } from "../modes/emacs/EmacsEditor";
 
 let nextId = 1;
 
@@ -126,6 +127,20 @@ export class Pane {
         cwd: this.shell.env.cwd,
         args,
         flavor: name === "nvim" ? "nvim" : "vim",
+        onExit: () => this.exitEditor(),
+      });
+      this.currentEditor = editor;
+      this.terminal.setDataHandler((d) => editor.onData(d));
+      editor.start();
+      this.terminal.focus();
+      return true;
+    }
+    if (name === "emacs") {
+      const editor = new EmacsEditor({
+        term: this.terminal,
+        vfs: this.opts.vfs,
+        cwd: this.shell.env.cwd,
+        args,
         onExit: () => this.exitEditor(),
       });
       this.currentEditor = editor;

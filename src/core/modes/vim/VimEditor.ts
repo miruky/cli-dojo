@@ -1,6 +1,7 @@
 import type { TerminalView } from "../../terminal/TerminalView";
 import type { VFS } from "../../vfs/VFS";
 import { makeRegex } from "../../shell/regex";
+import { charWidth } from "../../terminal/wcwidth";
 
 export interface VimOptions {
   term: TerminalView;
@@ -1630,7 +1631,7 @@ export class VimEditor {
   private displayCol(row: number, col: number): number {
     const l = this.buffer[row] ?? "";
     let w = 0;
-    for (let i = 0; i < col && i < l.length; i++) w += l[i] === "\t" ? 8 - (w % 8) : 1;
+    for (let i = 0; i < col && i < l.length; i++) w += l[i] === "\t" ? 8 : charWidth(l[i]);
     return w;
   }
 
