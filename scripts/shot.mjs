@@ -47,13 +47,24 @@ try {
     else if (cmd === "focus") await page.focus(arg);
     else if (cmd === "wait") await new Promise((r) => setTimeout(r, Number(arg)));
     else if (cmd === "type") await page.keyboard.type(arg);
-    else if (cmd === "key") await page.keyboard.press(arg);
-    else if (cmd === "eval") await page.evaluate(arg);
+    else if (cmd === "key") {
+      // "Control+a" のような組合せに対応 (最後がキー、前は修飾)
+      const parts = arg.split("+");
+      const k = parts.pop();
+      for (const m of parts) await page.keyboard.down(m);
+      await page.keyboard.press(k);
+      for (const m of parts.reverse()) await page.keyboard.up(m);
+    } else if (cmd === "shot") {
+      await page.screenshot({ path: arg });
+      console.log("saved", arg);
+    } else if (cmd === "eval") await page.evaluate(arg);
     else console.log("unknown action:", a);
   }
 
-  await page.screenshot({ path: out });
-  console.log("saved", out);
+  if (out && out !== "-") {
+    await page.screenshot({ path: out });
+    console.log("saved", out);
+  }
 } finally {
   await browser.close();
 }

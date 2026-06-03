@@ -1,6 +1,11 @@
 /** ANSI エスケープの薄いヘルパ群。truecolor 指定で Cobalt 系に合わせる。 */
 export const RESET = "\x1b[0m";
 
+// SGR (色) エスケープを除去して可視幅計算に使う
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+export const stripAnsi = (s: string): string => s.replace(ANSI_RE, "");
+
 export const fg = (r: number, g: number, b: number, s: string): string =>
   `\x1b[38;2;${r};${g};${b}m${s}${RESET}`;
 
