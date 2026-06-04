@@ -144,6 +144,59 @@ const clear: Command = {
   },
 };
 
+/** printf 変換指定子を幅・精度・フラグ付きで整形する。 */
+function fmtConv(
+  flags: string,
+  width: number,
+  prec: number | null,
+  conv: string,
+  raw: string,
+): string {
+  const left = flags.includes("-");
+  const zero = flags.includes("0") && !left;
+  const plus = flags.includes("+");
+  const space = flags.includes(" ");
+  let body = "";
+  let sign = "";
+  const isNum = "diouxXfeg".includes(conv);
+  if (conv === "s") {
+    body = prec != null ? raw.slice(0, prec) : raw;
+  } else if (conv === "c") {
+    body = raw.slice(0, 1);
+  } else if (conv === "d" || conv === "i") {
+    let n = parseInt(raw, 10);
+    if (!Number.isFinite(n)) n = 0;
+    sign = n < 0 ? "-" : plus ? "+" : space ? " " : "";
+    let digits = Math.abs(n).toString();
+    if (prec != null) digits = digits.padStart(prec, "0");
+    body = digits;
+  } else if (conv === "o" || conv === "x" || conv === "X") {
+    let n = parseInt(raw, 10);
+    if (!Number.isFinite(n)) n = 0;
+    let digits = Math.abs(n).toString(conv === "o" ? 8 : 16);
+    if (conv === "X") digits = digits.toUpperCase();
+    if (prec != null) digits = digits.padStart(prec, "0");
+    body = digits;
+  } else if (conv === "f" || conv === "e" || conv === "g") {
+    let n = Number(raw);
+    if (!Number.isFinite(n)) n = 0;
+    sign = n < 0 ? "-" : plus ? "+" : space ? " " : "";
+    const p = prec == null ? 6 : prec;
+    const abs = Math.abs(n);
+    body = conv === "f" ? abs.toFixed(p) : conv === "e" ? abs.toExponential(p) : String(abs);
+  } else {
+    body = raw;
+  }
+  let full = sign + body;
+  if (full.length < width) {
+    const pad = width - full.length;
+    if (left) full = full + " ".repeat(pad);
+    else if (zero && isNum) full = sign + "0".repeat(pad) + body;
+    else full = " ".repeat(pad) + full;
+  }
+  return full;
+}
+
 const printf: Command = {
   name: "printf",
   summary: "書式に従って表示",
@@ -168,19 +221,16 @@ const printf: Command = {
           continue;
         }
         if (c === "%") {
-          const m = /^%[-+ 0]*\d*(?:\.\d+)?([sdioxXc%])/.exec(fmt.slice(i));
+          const m = /^%([-+ 0]*)(\d*)(?:\.(\d*))?([sdioxXcfeg%])/.exec(fmt.slice(i));
           if (m) {
-            const conv = m[1];
+            const conv = m[4];
             if (conv === "%") out += "%";
             else {
               used = true;
               const a = args[ai++] ?? "";
-              if (conv === "d" || conv === "i") out += String(parseInt(a, 10) || 0);
-              else if (conv === "x") out += (parseInt(a, 10) || 0).toString(16);
-              else if (conv === "X") out += (parseInt(a, 10) || 0).toString(16).toUpperCase();
-              else if (conv === "o") out += (parseInt(a, 10) || 0).toString(8);
-              else if (conv === "c") out += a.slice(0, 1);
-              else out += a;
+              const width = m[2] ? parseInt(m[2], 10) : 0;
+              const prec = m[3] === undefined ? null : m[3] === "" ? 0 : parseInt(m[3], 10);
+              out += fmtConv(m[1], width, prec, conv, a);
             }
             i += m[0].length;
             continue;

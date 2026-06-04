@@ -5,12 +5,12 @@
 :root {
   color-scheme: dark;
 
-  --bg-0: #060a16;
-  --bg-1: #0a1228;
-  --panel: rgba(8, 14, 30, 0.55);
-  --panel-2: rgba(14, 22, 44, 0.66);
-  --panel-border: rgba(120, 140, 200, 0.18);
-  --hairline: rgba(120, 140, 200, 0.14);
+  --bg-0: #000000;
+  --bg-1: #000000;
+  --panel: #060608;
+  --panel-2: rgba(15, 16, 21, 0.94);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --hairline: rgba(255, 255, 255, 0.08);
 
   --accent: #ffc600;
   --accent-blue: #0088ff;
@@ -23,8 +23,8 @@
   --fg-dim: #8a93ad;
   --fg-faint: #626688;
 
-  --font-mono: "HackGen Console NF", "HackGen Console", ui-monospace,
-    "SFMono-Regular", Menlo, Consolas, "Hiragino Kaku Gothic ProN",
+  --font-mono: "CaskaydiaMono NF", "HackGen Console NF", "HackGen Console",
+    ui-monospace, "SFMono-Regular", Menlo, Consolas, "Hiragino Kaku Gothic ProN",
     "Noto Sans JP", monospace;
 
   --topbar-h: 46px;
@@ -56,37 +56,20 @@ body {
   color: var(--fg);
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
-  background: radial-gradient(
-      1200px 800px at 15% -10%,
-      rgba(0, 136, 255, 0.2),
-      transparent 60%
-    ),
-    radial-gradient(
-      1000px 700px at 110% 10%,
-      rgba(251, 148, 255, 0.14),
-      transparent 55%
-    ),
-    radial-gradient(
-      900px 900px at 50% 120%,
-      rgba(24, 179, 199, 0.16),
-      transparent 60%
-    ),
-    linear-gradient(160deg, var(--bg-1), var(--bg-0));
+  background: #000000;
 }
 
 #app {
   position: fixed;
-  inset: 12px;
+  inset: 10px;
   display: flex;
   flex-direction: column;
   border-radius: var(--radius);
   background: var(--panel);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 1px solid var(--panel-border);
   box-shadow:
-    var(--shadow-panel),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
   overflow: hidden;
 }
 
@@ -101,4 +84,16 @@ body {
 }
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(120, 140, 200, 0.4);
+}
+
+/* SVG アイコン (絵文字の代替) */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex: 0 0 auto;
+}
+.icon svg {
+  display: block;
 }

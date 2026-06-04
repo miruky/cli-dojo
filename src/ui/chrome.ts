@@ -1,4 +1,5 @@
 import { el } from "../util/dom";
+import { iconEl } from "./icons";
 import type { ViewId } from "../router";
 import type { ModeMeta } from "../core/modes/types";
 
@@ -38,7 +39,7 @@ export function buildChrome(
   );
 
   const brand = el("div", { class: "brand" }, [
-    el("span", { class: "brand-glyph", text: "🥋" }),
+    iconEl("terminal-square", "brand-glyph"),
     el("span", { class: "brand-name", text: "cli-dojo" }),
   ]);
 

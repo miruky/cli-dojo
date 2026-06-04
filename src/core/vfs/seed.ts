@@ -297,6 +297,15 @@ export function buildInitialFS(): VFS {
     me({ mtime: d("2026-05-10T09:00:00") }),
   );
   file("/home/guest/projects/.gitignore", ["node_modules/", "*.log", "*.o", "dist/", ""].join("\n"), me());
+  // git リポジトリ (プロンプトの git セグメント用)
+  dir("/home/guest/projects/.git/refs/heads", me());
+  file("/home/guest/projects/.git/HEAD", "ref: refs/heads/main\n", me());
+  file(
+    "/home/guest/projects/.git/config",
+    ["[core]", "\trepositoryformatversion = 0", '[remote "origin"]', "\turl = git@github.com:guest/app.git", ""].join("\n"),
+    me(),
+  );
+  file("/home/guest/projects/.git/refs/heads/main", "a1b2c3d4e5f6a7b8c9d0\n", me());
 
   // ----- docs -----
   dir("/home/guest/docs", me());

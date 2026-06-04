@@ -1,4 +1,5 @@
 import { el } from "../util/dom";
+import { iconEl } from "./icons";
 
 interface KeySection {
   title: string;
@@ -88,7 +89,10 @@ export class HelpOverlay {
 
     this.panel = el("div", { class: "help-panel", attrs: { role: "dialog", "aria-label": "キーバインド" } }, [
       el("div", { class: "help-header" }, [
-        el("span", { class: "help-title", text: "⌨  キーバインド早見表" }),
+        el("span", { class: "help-title" }, [
+          iconEl("keyboard", "", 18),
+          el("span", { text: "キーバインド早見表" }),
+        ]),
         el("button", {
           class: "help-close",
           text: "✕",

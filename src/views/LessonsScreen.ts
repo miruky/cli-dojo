@@ -1,4 +1,5 @@
 import { clear, el } from "../util/dom";
+import { iconEl } from "../ui/icons";
 import { LESSONS, type CheatItem, type Lesson } from "../lessons/data";
 
 export interface LessonsOptions {
@@ -74,7 +75,7 @@ export class LessonsScreen {
             },
           },
           [
-            el("span", { class: "lessons-nav-glyph", text: l.glyph || "•" }),
+            iconEl(l.icon, "lessons-nav-glyph", 17),
             el("span", { text: l.title }),
           ],
         );
@@ -92,7 +93,7 @@ export class LessonsScreen {
     const lesson = LESSONS.find((l) => l.id === this.current) ?? LESSONS[0];
     this.contentEl.append(
       el("div", { class: "lesson-header", style: `--accent:${lesson.accent}` }, [
-        el("span", { class: "lesson-header-glyph", text: lesson.glyph || "•" }),
+        iconEl(lesson.icon, "lesson-header-glyph", 26),
         el("div", {}, [
           el("h2", { class: "lesson-header-title", text: lesson.title }),
           el("p", { class: "lesson-header-intro", text: lesson.intro }),

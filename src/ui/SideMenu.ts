@@ -1,4 +1,5 @@
 import { el } from "../util/dom";
+import { iconEl } from "./icons";
 import type { ViewId } from "../router";
 import { MODE_ORDER, MODES, type ModeId } from "../core/modes/types";
 
@@ -40,8 +41,8 @@ export class SideMenu {
 
     const viewSection = el("div", { class: "menu-section" }, [
       el("div", { class: "menu-label", text: "表示" }),
-      this.viewButton("terminal", "🖥", "ターミナル", cb),
-      this.viewButton("lessons", "📖", "レッスン", cb),
+      this.viewButton("terminal", "monitor", "ターミナル", cb),
+      this.viewButton("lessons", "book", "レッスン", cb),
     ]);
 
     const modeSection = el("div", { class: "menu-section" }, [
@@ -73,7 +74,7 @@ export class SideMenu {
 
   private viewButton(
     id: ViewId,
-    glyph: string,
+    icon: string,
     label: string,
     cb: SideMenuCallbacks,
   ): HTMLButtonElement {
@@ -85,7 +86,7 @@ export class SideMenu {
         on: { click: () => cb.onSelectView(id) },
       },
       [
-        el("span", { class: "menu-item-glyph", text: glyph }),
+        iconEl(icon, "menu-item-glyph"),
         el("span", { class: "menu-item-label", text: label }),
       ],
     );
@@ -104,7 +105,7 @@ export class SideMenu {
         on: { click: () => cb.onSelectMode(id) },
       },
       [
-        el("span", { class: "menu-item-glyph", text: m.glyph || "•" }),
+        iconEl(m.icon, "menu-item-glyph"),
         el("span", { class: "menu-item-label", text: m.label }),
         el("span", { class: "menu-item-hint", text: m.hint }),
       ],

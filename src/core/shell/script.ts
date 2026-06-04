@@ -103,7 +103,7 @@ class ScriptParser {
     return (
       kw === "if" || kw === "for" || kw === "while" || kw === "until" ||
       kw === "case" || kw === "function" || kw === "{" ||
-      (!!kw && /^[A-Za-z_]\w*\(\)$/.test(kw))
+      (!!kw && /^[A-Za-z_]\w*\(\)\{?$/.test(kw))
     );
   }
 
@@ -118,9 +118,10 @@ class ScriptParser {
     if (kw === "case") return this.parseCase();
     if (kw === "function") return this.parseFunctionKw();
     if (kw === "{") return this.parseGroup();
-    if (kw && /^[A-Za-z_]\w*\(\)$/.test(kw)) {
+    const fm = kw ? /^([A-Za-z_]\w*)\(\)(\{?)$/.exec(kw) : null;
+    if (fm) {
       this.pos++;
-      return this.finishFunc(kw.slice(0, -2));
+      return this.finishFunc(fm[1], fm[2] === "{");
     }
     return null;
   }
@@ -291,15 +292,16 @@ class ScriptParser {
   private parseFunctionKw(): Stmt {
     this.expectKw("function");
     const nt = this.peek();
-    let name = nt && nt.t === "word" ? plainText(nt.word) : "f";
-    name = name.replace(/\(\)$/, "");
+    const raw = nt && nt.t === "word" ? plainText(nt.word) : "f";
     this.pos++;
-    return this.finishFunc(name);
+    const m = /^([A-Za-z_]\w*)(?:\(\))?(\{?)$/.exec(raw);
+    if (m) return this.finishFunc(m[1], m[2] === "{");
+    return this.finishFunc(raw.replace(/\(\)$/, ""));
   }
 
-  private finishFunc(name: string): Stmt {
+  private finishFunc(name: string, braceGlued = false): Stmt {
     this.skipSeps();
-    this.expectKw("{");
+    if (!braceGlued) this.expectKw("{");
     const body = this.parseBlock(new Set(["}"]));
     this.expectKw("}");
     return { kind: "func", name, body };
@@ -341,7 +343,7 @@ export function looksLikeScript(input: string): boolean {
       continue;
     }
     const kw = wordText(t.word);
-    if (cmdPos && kw && (STRUCTURAL.has(kw) || /^[A-Za-z_]\w*\(\)$/.test(kw))) {
+    if (cmdPos && kw && (STRUCTURAL.has(kw) || /^[A-Za-z_]\w*\(\)\{?$/.test(kw))) {
       if (kw !== "{" && kw !== "}") return true;
       if (kw === "{") return true;
     }

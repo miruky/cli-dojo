@@ -65,7 +65,12 @@
   user-select: none;
 }
 .brand-glyph {
-  font-size: 15px;
+  color: var(--accent);
+}
+.help-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .brand-name {
   background: linear-gradient(90deg, var(--accent), #ff9d00);

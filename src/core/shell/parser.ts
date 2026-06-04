@@ -172,6 +172,27 @@ function readWord(s: string, start: number): { word: Word; next: number } {
       continue;
     }
 
+    if (c === "$" && s[i + 1] === "{") {
+      // ${...} は空白 (${v// /_} など) を含んでも 1 語として保持する
+      let depth = 0;
+      let j = i + 1;
+      for (; j < n; j++) {
+        if (s[j] === "{") depth++;
+        else if (s[j] === "}") {
+          depth--;
+          if (depth === 0) {
+            j++;
+            break;
+          }
+        }
+      }
+      if (buf !== "" && bufQuote !== "none") flush();
+      bufQuote = "none";
+      buf += s.slice(i, j);
+      i = j;
+      continue;
+    }
+
     if (c === "`") {
       flush();
       const sub = readBacktick(s, i + 1);

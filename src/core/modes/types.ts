@@ -11,8 +11,8 @@ export interface ModeMeta {
   color: string;
   /** 一行説明 */
   hint: string;
-  /** カードやボタンの簡易グリフ */
-  glyph: string;
+  /** SVG アイコン名 (ui/icons.ts) */
+  icon: string;
 }
 
 export const MODES: Record<ModeId, ModeMeta> = {
@@ -22,7 +22,7 @@ export const MODES: Record<ModeId, ModeMeta> = {
     badge: "LINUX",
     color: "var(--accent-green)",
     hint: "bash 風シェル。コマンドを自由に実行。",
-    glyph: "$",
+    icon: "terminal-square",
   },
   tmux: {
     id: "tmux",
@@ -30,7 +30,7 @@ export const MODES: Record<ModeId, ModeMeta> = {
     badge: "TMUX",
     color: "#67ec5a",
     hint: "端末多重化。prefix Ctrl-b。",
-    glyph: "▦",
+    icon: "grid",
   },
   nvim: {
     id: "nvim",
@@ -38,7 +38,7 @@ export const MODES: Record<ModeId, ModeMeta> = {
     badge: "NVIM",
     color: "var(--accent-green)",
     hint: "モーダルエディタ (LazyVim 風)。",
-    glyph: "",
+    icon: "edit",
   },
   emacs: {
     id: "emacs",
@@ -46,7 +46,7 @@ export const MODES: Record<ModeId, ModeMeta> = {
     badge: "EMACS",
     color: "var(--accent-magenta)",
     hint: "C-x C-c で終了などデフォルト準拠。",
-    glyph: "Ψ",
+    icon: "file-text",
   },
   ghostty: {
     id: "ghostty",
@@ -54,7 +54,7 @@ export const MODES: Record<ModeId, ModeMeta> = {
     badge: "GHOSTTY",
     color: "var(--accent)",
     hint: "ペイン分割・移動 (あなたの設定準拠)。",
-    glyph: "👻",
+    icon: "ghost",
   },
 };
 

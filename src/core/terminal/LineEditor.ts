@@ -18,6 +18,10 @@ export interface LineEditorOptions {
   onSubmit: (line: string) => void;
   history: History;
   completer?: Completer;
+  /** プロンプトの直前に表示する1行 (Powerline セグメント等)。 */
+  header?: () => string;
+  /** 入力行のシンタックスハイライト (可視文字は変えず ANSI のみ付与)。 */
+  highlight?: (line: string) => string;
 }
 
 interface Pos {
@@ -104,6 +108,7 @@ export class LineEditor {
     this.searching = false;
     this.histIndex = this.opts.history.length;
     this.draft = "";
+    if (this.opts.header) this.term.write(this.opts.header() + "\r\n");
     this.term.write(this.opts.prompt());
   }
 
@@ -141,7 +146,10 @@ export class LineEditor {
     let seq = "";
     if (this.lastCursorRow > 0) seq += `\x1b[${this.lastCursorRow}A`;
     seq += "\r\x1b[J";
-    seq += this.opts.prompt() + this.chars.join("");
+    const body = this.opts.highlight
+      ? this.opts.highlight(this.chars.join(""))
+      : this.chars.join("");
+    seq += this.opts.prompt() + body;
 
     const end = layoutPos(allChars, allChars.length, cols);
     const cur = layoutPos(allChars, cursorOffset, cols);

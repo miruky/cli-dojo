@@ -13,7 +13,7 @@ export interface Lesson {
   id: string;
   group: string;
   title: string;
-  glyph: string;
+  icon: string;
   accent: string;
   intro: string;
   sections: CheatSection[];
@@ -28,9 +28,9 @@ const BLUE = "var(--accent-blue)";
 export const LESSONS: Lesson[] = [
   {
     id: "basics",
+    icon: "terminal-square",
     group: "Linux",
     title: "基礎・ナビゲーション",
-    glyph: "🐧",
     accent: GREEN,
     intro: "まずはここから。ディレクトリ移動とファイルの中身を見る基本。",
     sections: [
@@ -72,9 +72,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "files",
+    icon: "folder",
     group: "Linux",
     title: "ファイル操作",
-    glyph: "📁",
     accent: GREEN,
     intro: "作る・コピー・移動・消す・探す。",
     sections: [
@@ -113,9 +113,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "text",
+    icon: "scissors",
     group: "Linux",
     title: "テキスト処理・パイプ",
-    glyph: "✂️",
     accent: CYAN,
     intro: "grep / sed / awk とパイプで自在に加工。LPIC/実務の核心。",
     sections: [
@@ -162,9 +162,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "regex",
+    icon: "regex",
     group: "Linux",
     title: "正規表現 (深掘り)",
-    glyph: ".*",
     accent: CYAN,
     intro: "BRE/ERE の違いと、grep -E / sed での実践パターン。",
     sections: [
@@ -200,9 +200,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "perms",
+    icon: "key",
     group: "Linux",
     title: "権限・ユーザー",
-    glyph: "🔑",
     accent: YELLOW,
     intro: "chmod / chown / umask と /etc のユーザー管理。",
     sections: [
@@ -232,9 +232,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "process",
+    icon: "cpu",
     group: "Linux",
     title: "プロセス・サービス",
-    glyph: "⚙",
     accent: BLUE,
     intro: "ps / top / kill とサービス管理 (systemd)。",
     sections: [
@@ -262,9 +262,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "lpic3",
+    icon: "globe",
     group: "Linux",
     title: "ネットワーク・LPIC-3",
-    glyph: "🌐",
     accent: BLUE,
     intro: "ネットワーク調査、パッケージ、暗号、cron など上位トピック。",
     sections: [
@@ -303,9 +303,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "scripting",
+    icon: "scroll",
     group: "Linux",
     title: "シェルスクリプト",
-    glyph: "📜",
     accent: YELLOW,
     intro: "if / for / while / 関数 / test。$? や $(()) も。",
     sections: [
@@ -332,9 +332,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "vim",
+    icon: "edit",
     group: "エディタ",
     title: "Vim / Neovim",
-    glyph: "",
     accent: GREEN,
     intro: "モーダル編集。`nvim <file>` で起動。Esc で normal に戻る。",
     sections: [
@@ -377,9 +377,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "emacs",
+    icon: "file-text",
     group: "エディタ",
     title: "Emacs",
-    glyph: "Ψ",
     accent: MAGENTA,
     intro: "非モーダル。C- は Ctrl、M- は Alt(Meta)。`emacs <file>` で起動。",
     sections: [
@@ -420,9 +420,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "tmux",
+    icon: "grid",
     group: "ツール",
     title: "tmux",
-    glyph: "▦",
     accent: GREEN,
     intro: "端末多重化。`tmux` で起動。prefix は Ctrl-b。",
     sections: [
@@ -449,9 +449,9 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "ghostty",
+    icon: "ghost",
     group: "ツール",
     title: "Ghostty (あなたの設定)",
-    glyph: "👻",
     accent: YELLOW,
     intro: "あなたの ~/.config/ghostty/config のキーバインドを再現しています。",
     sections: [

@@ -1,0 +1,8 @@
+/* Powerline 区切り/アイコングリフを含む Nerd Font (端末・UI 共用) */
+@font-face {
+  font-family: "CaskaydiaMono NF";
+  src: url("../fonts/CaskaydiaMonoNerdFont-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}

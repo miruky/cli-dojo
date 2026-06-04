@@ -30,4 +30,4 @@ export const COBALT_THEME: ITheme = {
 };
 
 export const TERMINAL_FONT =
-  "'HackGen Console NF', 'HackGen Console', ui-monospace, 'SFMono-Regular', Menlo, monospace";
+  "'CaskaydiaMono NF', 'HackGen Console NF', 'HackGen Console', ui-monospace, 'SFMono-Regular', Menlo, monospace";

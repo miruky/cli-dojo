@@ -28,10 +28,21 @@ const paste: Command = {
     const files: string[] = [];
     for (let i = 1; i < args.length; i++) {
       const a = args[i];
-      if (a === "-s") serial = true;
-      else if (a === "-d") delims = [...unescape(args[++i] ?? "\t")];
-      else if (a.startsWith("-d")) delims = [...unescape(a.slice(2))];
-      else files.push(a);
+      if (a === "--") continue;
+      if (a === "-" || !a.startsWith("-")) {
+        files.push(a);
+        continue;
+      }
+      // 結合された短縮フラグに対応 (-s, -d X, -d,, -sd,)
+      for (let j = 1; j < a.length; j++) {
+        const c = a[j];
+        if (c === "s") serial = true;
+        else if (c === "d") {
+          const rest = a.slice(j + 1);
+          delims = [...unescape(rest || (args[++i] ?? "\t"))];
+          break;
+        }
+      }
     }
     if (delims.length === 0) delims = ["\t"];
     const contents = (files.length ? files : ["-"]).map((f) => readFile(ctx, f) ?? "");

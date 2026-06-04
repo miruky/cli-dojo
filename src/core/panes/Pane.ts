@@ -67,6 +67,8 @@ export class Pane {
     });
     this.editor = new LineEditor(this.terminal.term, {
       prompt: () => this.shell.prompt(),
+      header: () => this.shell.promptHeader(),
+      highlight: (line) => this.shell.highlight(line),
       history: this.opts.history,
       completer: (line, cursor) => this.shell.complete(line, cursor),
       onSubmit: (line) => this.onCommand(line),
