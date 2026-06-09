@@ -7,8 +7,17 @@ import type { VFS } from "../vfs/VFS";
 import { TmuxSession } from "../modes/tmux/TmuxSession";
 import { VimEditor } from "../modes/vim/VimEditor";
 import { EmacsEditor } from "../modes/emacs/EmacsEditor";
+import type { ModeId } from "../modes/types";
 
 let nextId = 1;
+
+/** 起動コマンド名 → 表示モードID。vim/vi/view/nvim はすべて nvim バッジ。 */
+function modeOf(name: string): ModeId | null {
+  if (name === "tmux") return "tmux";
+  if (name === "vim" || name === "vi" || name === "nvim" || name === "view") return "nvim";
+  if (name === "emacs") return "emacs";
+  return null;
+}
 
 export interface AppInstance {
   el: HTMLElement;
@@ -28,6 +37,8 @@ export interface PaneOptions {
   history: History;
   vfs: VFS;
   onFocusRequest: (pane: Pane) => void;
+  /** ホストするモードが変化したとき (起動/終了) に呼ばれる。null = 素のシェル。 */
+  onModeChange?: (pane: Pane, mode: ModeId | null) => void;
 }
 
 /** 1つのペイン = 独立したシェルセッション。モード(tmux等)をホストできる。VFS は共有。 */
@@ -43,6 +54,7 @@ export class Pane {
   private pendingApp: { name: string; args: string[] } | null = null;
   private currentApp: AppInstance | null = null;
   private currentEditor: EditorApp | null = null;
+  private mode: ModeId | null = null;
 
   constructor(opts: PaneOptions) {
     this.opts = opts;
@@ -90,9 +102,9 @@ export class Pane {
     this.editor.prompt();
   }
 
-  /** モードボタン等から起動 (シェルコマンドを介さず)。 */
+  /** モードボタン等から起動 (シェルコマンドを介さず)。既に別モード中なら一旦抜けてから切替。 */
   launchMode(name: string): void {
-    if (this.currentApp || this.currentEditor) return;
+    if (this.currentApp || this.currentEditor) this.exitMode();
     if (this.launch(name, [])) return;
     this.editor.systemNotice(`${name}: このモードは順次実装します (現状: tmux が利用可能)。`);
   }
@@ -107,7 +119,31 @@ export class Pane {
     return this.currentApp != null || this.currentEditor != null;
   }
 
+  /** 現在ホストしているモード (null = 素のシェル)。 */
+  currentMode(): ModeId | null {
+    return this.mode;
+  }
+
+  private setMode(mode: ModeId | null): void {
+    if (this.mode === mode) return;
+    this.mode = mode;
+    this.opts.onModeChange?.(this, mode);
+  }
+
+  /** 外部 (チートシート等) からプロンプト行へコマンドを挿入する。アプリ中は無視。 */
+  fillPrompt(text: string): void {
+    if (this.currentApp || this.currentEditor) return;
+    this.editor.fill(text);
+    this.terminal.focus();
+  }
+
   private launch(name: string, args: string[]): boolean {
+    const ok = this.launchInner(name, args);
+    if (ok) this.setMode(modeOf(name));
+    return ok;
+  }
+
+  private launchInner(name: string, args: string[]): boolean {
     if (name === "tmux") {
       const session = new TmuxSession({
         history: this.opts.history,
@@ -160,6 +196,7 @@ export class Pane {
       this.currentApp.el.remove();
       this.currentApp = null;
     }
+    this.setMode(null);
     this.host.style.display = "";
     this.terminal.fit();
     this.editor.prompt();
@@ -171,6 +208,7 @@ export class Pane {
       this.currentEditor.dispose();
       this.currentEditor = null;
     }
+    this.setMode(null);
     this.terminal.setDataHandler((d) => this.editor.onData(d));
     this.terminal.fit();
     this.editor.prompt();

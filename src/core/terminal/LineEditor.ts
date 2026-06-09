@@ -112,6 +112,12 @@ export class LineEditor {
     this.term.write(this.opts.prompt());
   }
 
+  /** 外部からプロンプト行へコマンドを挿入する (実行はしない)。カーソル位置に挿入。 */
+  fill(text: string): void {
+    if (!this.reading) return;
+    this.insert(text);
+  }
+
   /** 出力行をそのまま表示 (コマンド結果用)。 */
   println(text: string): void {
     this.term.write(text.replace(/\n/g, "\r\n") + "\r\n");

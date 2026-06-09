@@ -3,6 +3,7 @@ import { Pane } from "./Pane";
 import type { History } from "../terminal/History";
 import { VFS } from "../vfs/VFS";
 import { buildInitialFS } from "../vfs/seed";
+import type { ModeId } from "../modes/types";
 
 type Dir = "left" | "right" | "up" | "down";
 type LeafNode = { kind: "leaf"; pane: Pane };
@@ -21,12 +22,21 @@ export class PaneManager {
   private history: History;
   private container: HTMLElement;
   private onActiveChange?: () => void;
+  private onModeChange?: (pane: Pane, mode: ModeId | null) => void;
 
-  constructor(container: HTMLElement, history: History, opts?: { onActiveChange?: () => void }) {
+  constructor(
+    container: HTMLElement,
+    history: History,
+    opts?: {
+      onActiveChange?: () => void;
+      onModeChange?: (pane: Pane, mode: ModeId | null) => void;
+    },
+  ) {
     this.container = container;
     this.history = history;
     this.vfs = buildInitialFS();
     this.onActiveChange = opts?.onActiveChange;
+    this.onModeChange = opts?.onModeChange;
     const pane = this.newPane();
     this.root = { kind: "leaf", pane };
     this.active = pane;
@@ -42,7 +52,12 @@ export class PaneManager {
   }
 
   private newPane(): Pane {
-    return new Pane({ history: this.history, vfs: this.vfs, onFocusRequest: (p) => this.setActive(p) });
+    return new Pane({
+      history: this.history,
+      vfs: this.vfs,
+      onFocusRequest: (p) => this.setActive(p),
+      onModeChange: (p, m) => this.onModeChange?.(p, m),
+    });
   }
 
   // ---- DOM ----

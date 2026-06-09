@@ -302,6 +302,93 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
+    id: "containers",
+    icon: "box",
+    group: "Linux",
+    title: "コンテナ (LPIC-3 304)",
+    accent: BLUE,
+    intro: "Docker / Podman / Kubernetes。コンテナの一覧・起動・イメージ・オーケストレーション。",
+    sections: [
+      {
+        title: "Docker / Podman 基本",
+        items: [
+          { cmd: "docker ps", desc: "稼働中コンテナ一覧" },
+          { cmd: "docker ps -a", desc: "停止済みも含めて一覧" },
+          { cmd: "docker images", desc: "ローカルのイメージ一覧" },
+          { cmd: "docker pull debian:12", desc: "イメージを取得" },
+          { cmd: "docker run -d nginx:1.27", desc: "バックグラウンドでコンテナ起動 (-d)" },
+          { cmd: "docker exec -it web bash", desc: "稼働中コンテナ内でシェル (-it)" },
+          { cmd: "docker logs web", desc: "コンテナのログ表示" },
+          { cmd: "docker build -t myapp .", desc: "Dockerfile からイメージ構築" },
+          { cmd: "docker info", desc: "デーモン/ストレージ/cgroup 情報" },
+          { cmd: "podman ps", desc: "Podman (rootless 互換) でも同じ" },
+        ],
+      },
+      {
+        title: "Docker Compose",
+        items: [
+          { cmd: "docker compose up", desc: "compose.yaml の全サービス起動" },
+          { cmd: "docker compose ps", desc: "compose 管理下の状態" },
+          { cmd: "docker compose down", desc: "停止して削除" },
+        ],
+      },
+      {
+        title: "Kubernetes (kubectl)",
+        items: [
+          { cmd: "kubectl get nodes", desc: "ノード一覧" },
+          { cmd: "kubectl get pods", desc: "Pod 一覧" },
+          { cmd: "kubectl get svc", desc: "Service 一覧" },
+          { cmd: "kubectl get ns", desc: "Namespace 一覧" },
+          { cmd: "kubectl describe pod web-7d9f8c6b5d-2xk4p", desc: "Pod の詳細" },
+          { cmd: "kubectl apply -f deploy.yaml", desc: "マニフェストを適用" },
+          { cmd: "kubectl cluster-info", desc: "クラスタのエンドポイント" },
+          { cmd: "kubectl version", desc: "クライアント/サーバ版数" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "virt",
+    icon: "server",
+    group: "Linux",
+    title: "仮想化・名前空間 (LPIC-3 305)",
+    accent: GREEN,
+    intro: "KVM/libvirt・Vagrant・LXD と、コンテナの土台となる namespace / cgroup。",
+    sections: [
+      {
+        title: "KVM / libvirt (virsh)",
+        items: [
+          { cmd: "virsh list --all", desc: "全ドメイン(VM)を一覧" },
+          { cmd: "virsh dominfo web-vm", desc: "VM の詳細 (CPU/メモリ/状態)" },
+          { cmd: "virsh start build-vm", desc: "VM を起動" },
+          { cmd: "virsh shutdown web-vm", desc: "VM を正常停止" },
+          { cmd: "virsh nodeinfo", desc: "ホストの CPU/メモリ情報" },
+          { cmd: "virsh net-list", desc: "仮想ネットワーク一覧" },
+        ],
+      },
+      {
+        title: "Vagrant / LXD",
+        items: [
+          { cmd: "vagrant status", desc: "Vagrant VM の状態" },
+          { cmd: "vagrant up", desc: "VM を起動・プロビジョン" },
+          { cmd: "vagrant halt", desc: "VM を停止" },
+          { cmd: "lxc list", desc: "LXD システムコンテナ一覧" },
+          { cmd: "lxc launch images:debian/12 web", desc: "コンテナを作成・起動" },
+        ],
+      },
+      {
+        title: "名前空間 / cgroup (コンテナの基盤)",
+        items: [
+          { cmd: "lsns", desc: "Linux 名前空間 (mnt/pid/net…) 一覧" },
+          { cmd: "unshare --pid --fork --mount-proc bash", desc: "新しい名前空間で実行 (例)" },
+          { cmd: "nsenter -t 1820 -n ip a", desc: "既存プロセスの NS に入る (例)" },
+          { cmd: "machinectl list", desc: "systemd 管理のマシン/コンテナ" },
+          { cmd: "systemd-nspawn -D /var/lib/machines/debian -b", desc: "ディレクトリを軽量コンテナ起動 (例)" },
+        ],
+      },
+    ],
+  },
+  {
     id: "scripting",
     icon: "scroll",
     group: "Linux",
@@ -414,6 +501,33 @@ export const LESSONS: Lesson[] = [
           { cmd: "C-x C-c", desc: "終了", keys: true },
           { cmd: "C-s  C-r", desc: "インクリメンタル検索 前/後", keys: true },
           { cmd: "M-x  C-g", desc: "コマンド実行 / 中断", keys: true },
+        ],
+      },
+      {
+        title: "dired (ディレクトリ操作) — まず開く",
+        items: [
+          { cmd: "emacs .", desc: "カレントディレクトリを dired で開く" },
+          { cmd: "emacs projects", desc: "ディレクトリを指定して dired で開く" },
+        ],
+      },
+      {
+        title: "dired の中の操作 (ネイティブ標準)",
+        items: [
+          { cmd: "C-x d", desc: "ミニバッファでディレクトリ指定して dired", keys: true },
+          { cmd: "n / p  (↓ / ↑)", desc: "次の行 / 前の行へ", keys: true },
+          { cmd: "RET / f", desc: "ファイルを開く / ディレクトリへ入る", keys: true },
+          { cmd: "^", desc: "親ディレクトリへ上がる", keys: true },
+          { cmd: "g", desc: "一覧を再読み込み", keys: true },
+          { cmd: "M-< / M->", desc: "先頭 / 末尾の項目へ", keys: true },
+          { cmd: "q", desc: "dired を閉じる (元のバッファへ)", keys: true },
+        ],
+      },
+      {
+        title: "tab-line (ファイルをタブ表示)",
+        items: [
+          { cmd: "M-x tab-line-mode", desc: "現在ディレクトリのファイルを上部にタブ表示", keys: true },
+          { cmd: "C-x ←  /  C-x →", desc: "前 / 次のファイルのタブへ切替", keys: true },
+          { cmd: "M-x global-tab-line-mode", desc: "全バッファでタブを有効化", keys: true },
         ],
       },
     ],

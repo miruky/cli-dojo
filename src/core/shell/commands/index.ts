@@ -13,6 +13,7 @@ import { sysinfoCommands } from "./sysinfo";
 import { hashingCommands } from "./hashing";
 import { archiveCommands } from "./archives";
 import { simCommands } from "./sims";
+import { containerCommands } from "./containers";
 import { scriptingCommands } from "./scripting";
 import { launcherCommands } from "./launchers";
 
@@ -36,6 +37,7 @@ export const allCommands: Command[] = [
   ...hashingCommands,
   ...archiveCommands,
   ...simCommands,
+  ...containerCommands,
   ...scriptingCommands,
   ...launcherCommands,
 ];

@@ -60,6 +60,16 @@ const SECTIONS: KeySection[] = [
       ["C-s C-r / C-g", "検索 / 中断"],
     ],
   },
+  {
+    title: "Emacs dired / tab-line",
+    accent: "var(--accent-magenta)",
+    rows: [
+      ["emacs . / C-x d", "ディレクトリを dired で開く"],
+      ["n p RET ^ q", "上下移動 / 開く / 親へ / 閉じる"],
+      ["M-x tab-line-mode", "ファイルをタブ表示 ON/OFF"],
+      ["C-x ← / C-x →", "前 / 次のファイルのタブへ"],
+    ],
+  },
 ];
 
 export class HelpOverlay {

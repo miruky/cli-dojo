@@ -1,5 +1,5 @@
 import type { TerminalView } from "../../terminal/TerminalView";
-import type { VFS } from "../../vfs/VFS";
+import type { VFS, VNode, FileType } from "../../vfs/VFS";
 import { charWidth } from "../../terminal/wcwidth";
 
 export interface EmacsOptions {
@@ -15,7 +15,35 @@ interface Pos {
   col: number;
 }
 
+/** dired (ディレクトリエディタ) の1行ぶんのメタ情報。 */
+interface DiredEntry {
+  name: string;
+  type: FileType;
+  mode: number;
+  owner: string;
+  group: string;
+  size: number;
+  mtime: Date;
+}
+interface DiredState {
+  dir: string;
+  entries: DiredEntry[];
+  line: number;
+  top: number;
+}
+/** C-x d で dired に入るとき、戻れるようファイルバッファを退避する。 */
+interface FileSnapshot {
+  buffer: string[];
+  filename: string;
+  absPath: string | null;
+  bufferName: string;
+  point: Pos;
+  top: number;
+  modified: boolean;
+}
+
 const RESET = "\x1b[0m";
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** Emacs デフォルトキーバインドのエディタ (非モーダル, alt-screen 描画)。 */
 export class EmacsEditor {
@@ -39,10 +67,16 @@ export class EmacsEditor {
   private lastWasKill = false;
 
   private prefixCx = false;
-  private mini: null | "find-file" | "write-file" | "execute" | "goto" = null;
+  private escPending = false;
+  private mini: null | "find-file" | "write-file" | "execute" | "goto" | "dired" = null;
   private miniPrompt = "";
   private miniInput = "";
   private echo = "";
+
+  // dired / tab-line
+  private dired: DiredState | null = null;
+  private tabLine = false;
+  private fileSnapshot: FileSnapshot | null = null;
 
   // isearch
   private isearch: null | { dir: number; query: string; start: Pos } = null;
@@ -60,6 +94,15 @@ export class EmacsEditor {
     this.filename = arg ?? "*scratch*";
     this.bufferName = arg ? arg.split("/").pop()! : "*scratch*";
     this.absPath = arg ? this.vfs.resolve(this.cwd, arg) : null;
+    // 引数がディレクトリなら dired を開く (ネイティブ emacs と同じ挙動)。
+    if (this.absPath) {
+      const node = this.vfs.stat(this.absPath);
+      if (node && node.type === "dir") {
+        this.openDired(this.absPath);
+        this.absPath = null; // ディレクトリはファイルバッファではない
+        return;
+      }
+    }
     this.loadFile();
   }
 
@@ -80,14 +123,20 @@ export class EmacsEditor {
 
   start(): void {
     this.term.term.write("\x1b[?1049h\x1b[6 q");
-    this.echo = this.absPath && !this.echo ? `${this.filename}` : this.echo;
-    this.render();
+    if (!this.dired) this.echo = this.absPath && !this.echo ? `${this.filename}` : this.echo;
+    this.draw();
   }
   dispose(): void {
     this.term.term.write("\x1b[?1049l\x1b[0 q");
   }
   fit(): void {
-    this.render();
+    this.draw();
+  }
+
+  /** dired かファイルバッファかで描画を振り分ける。 */
+  private draw(): void {
+    if (this.dired) this.renderDired();
+    else this.render();
   }
 
   // ===== 入力 =====
@@ -96,7 +145,7 @@ export class EmacsEditor {
       this.handleKey(token);
       if (this.done) return;
     }
-    if (!this.done) this.render();
+    if (!this.done) this.draw();
   }
 
   private tokenize(data: string): string[] {
@@ -178,9 +227,24 @@ export class EmacsEditor {
       this.handleMini(token);
       return;
     }
+    // ESC を Meta プレフィックスとして扱う (ネイティブ emacs と同じ: ESC x = M-x)。
+    if (this.escPending) {
+      this.escPending = false;
+      if (token === "DEL") token = "M-DEL";
+      else if (token.length === 1) token = "M-" + token;
+      // それ以外 (矢印/RET 等) はそのまま処理
+    } else if (token === "ESC") {
+      this.escPending = true;
+      this.echo = "ESC-";
+      return;
+    }
     if (this.prefixCx) {
       this.prefixCx = false;
       this.handleCx(token);
+      return;
+    }
+    if (this.dired) {
+      this.handleDired(token);
       return;
     }
     this.echo = "";
@@ -324,12 +388,26 @@ export class EmacsEditor {
       case "C-f":
         this.mini = "find-file";
         this.miniPrompt = "Find file: ";
-        this.miniInput = this.cwd.endsWith("/") ? this.cwd : this.cwd + "/";
+        this.miniInput = this.miniDirDefault();
         break;
       case "C-w":
         this.mini = "write-file";
         this.miniPrompt = "Write file: ";
         this.miniInput = this.cwd.endsWith("/") ? this.cwd : this.cwd + "/";
+        break;
+      case "d":
+        // C-x d: dired を開く
+        this.mini = "dired";
+        this.miniPrompt = "Dired (directory): ";
+        this.miniInput = this.miniDirDefault();
+        break;
+      case "Left":
+        // C-x <left>: tab-line の前のファイルへ (previous-buffer 相当)
+        this.switchTab(-1);
+        break;
+      case "Right":
+        // C-x <right>: tab-line の次のファイルへ (next-buffer 相当)
+        this.switchTab(1);
         break;
       case "u":
         this.undo();
@@ -373,14 +451,18 @@ export class EmacsEditor {
       const which = this.mini;
       this.mini = null;
       if (which === "find-file") {
-        this.absPath = this.vfs.resolve(this.cwd, input);
-        this.filename = input;
-        this.bufferName = input.split("/").pop() || input;
-        this.echo = "";
-        this.loadFile();
-        this.point = { row: 0, col: 0 };
-        this.top = 0;
-        this.modified = false;
+        const abs = this.vfs.resolve(this.cwd, input);
+        const node = this.vfs.stat(abs);
+        if (node && node.type === "dir") {
+          // ディレクトリを開いたら dired (ネイティブ emacs と同じ)
+          this.captureFileSnapshotIfFile();
+          this.openDired(abs);
+        } else {
+          this.visitFile(abs, input);
+        }
+      } else if (which === "dired") {
+        this.captureFileSnapshotIfFile();
+        this.openDired(this.vfs.resolve(this.cwd, input));
       } else if (which === "write-file") {
         this.save(this.vfs.resolve(this.cwd, input));
         this.absPath = this.vfs.resolve(this.cwd, input);
@@ -406,7 +488,7 @@ export class EmacsEditor {
   }
 
   private completeMiniPath(): void {
-    if (this.mini !== "find-file" && this.mini !== "write-file") return;
+    if (this.mini !== "find-file" && this.mini !== "write-file" && this.mini !== "dired") return;
     const input = this.miniInput;
     const slash = input.lastIndexOf("/");
     const dirPart = slash >= 0 ? input.slice(0, slash + 1) : "";
@@ -448,9 +530,200 @@ export class EmacsEditor {
       case "what-line":
         this.echo = `Line ${this.point.row + 1}`;
         break;
+      case "dired":
+        this.mini = "dired";
+        this.miniPrompt = "Dired (directory): ";
+        this.miniInput = this.miniDirDefault();
+        break;
+      case "tab-line-mode":
+      case "global-tab-line-mode":
+        this.tabLine = !this.tabLine;
+        this.echo = `Tab-Line mode ${this.tabLine ? "enabled" : "disabled"}`;
+        break;
       default:
         this.echo = `No command: ${cmd}`;
     }
+  }
+
+  // ===== dired (ディレクトリエディタ) =====
+  private miniDirDefault(): string {
+    const base = this.dired ? this.dired.dir : this.cwd;
+    return base.endsWith("/") ? base : base + "/";
+  }
+
+  private dirOf(absFile: string): string {
+    return this.vfs.resolve(absFile, "..");
+  }
+
+  /** dir 内のファイル (タブ表示/タブ切替に使う)。名前順。 */
+  private dirFiles(dir: string): Array<{ name: string; abs: string }> {
+    const node = this.vfs.stat(dir);
+    if (!node || node.type !== "dir" || !node.children) return [];
+    const out: Array<{ name: string; abs: string }> = [];
+    for (const [n, c] of node.children) {
+      if (c.type === "file") out.push({ name: n, abs: this.vfs.resolve(dir, n) });
+    }
+    out.sort((a, b) => a.name.localeCompare(b.name));
+    return out;
+  }
+
+  private diredEntry(node: VNode, name: string): DiredEntry {
+    return {
+      name,
+      type: node.type,
+      mode: node.mode,
+      owner: node.owner,
+      group: node.group,
+      size: node.type === "dir" ? 4096 : node.content.length,
+      mtime: node.mtime,
+    };
+  }
+
+  private openDired(absDir: string): void {
+    const node = this.vfs.stat(absDir);
+    if (!node || node.type !== "dir" || !node.children) {
+      this.echo = `${absDir} is not a directory`;
+      return;
+    }
+    const entries: DiredEntry[] = [this.diredEntry(node, ".")];
+    if (node.parent) entries.push(this.diredEntry(node.parent, ".."));
+    const names = [...node.children.keys()].sort((a, b) => a.localeCompare(b));
+    for (const n of names) entries.push(this.diredEntry(node.children.get(n)!, n));
+    const firstReal = Math.min(entries.length - 1, node.parent ? 2 : 1);
+    this.dired = { dir: absDir, entries, line: Math.max(0, firstReal), top: 0 };
+    this.bufferName = absDir.split("/").filter(Boolean).pop() || "/";
+    this.echo = "";
+  }
+
+  private handleDired(token: string): void {
+    const d = this.dired!;
+    this.echo = "";
+    switch (token) {
+      case "C-x":
+        this.prefixCx = true;
+        this.echo = "C-x-";
+        break;
+      case "C-n":
+      case "Down":
+      case "n":
+        d.line = Math.min(d.line + 1, d.entries.length - 1);
+        break;
+      case "C-p":
+      case "Up":
+      case "p":
+        d.line = Math.max(d.line - 1, 0);
+        break;
+      case "M-<":
+        d.line = 0;
+        break;
+      case "M->":
+        d.line = d.entries.length - 1;
+        break;
+      case "RET":
+      case "f":
+      case "e":
+        this.diredOpen();
+        break;
+      case "^":
+        this.openDired(this.vfs.resolve(d.dir, ".."));
+        break;
+      case "g":
+        this.openDired(d.dir);
+        break;
+      case "q":
+        this.diredQuit();
+        break;
+      case "C-g":
+        this.echo = "Quit";
+        break;
+      default:
+        if (token.startsWith("C-") || token.startsWith("M-")) this.echo = `${token} is undefined`;
+        break;
+    }
+  }
+
+  private diredOpen(): void {
+    const d = this.dired!;
+    const e = d.entries[d.line];
+    if (!e) return;
+    const abs = this.vfs.resolve(d.dir, e.name);
+    const node = this.vfs.stat(abs);
+    if (node && node.type === "dir") {
+      this.openDired(abs);
+    } else if (node && node.type === "file") {
+      this.visitFile(abs, e.name === "." ? this.filename : abs);
+    } else {
+      this.echo = `${e.name}: no such file`;
+    }
+  }
+
+  private diredQuit(): void {
+    if (this.fileSnapshot) this.restoreFileSnapshot();
+    else this.quit();
+  }
+
+  /** dired/タブ切替からファイルを開く (バッファ差し替え)。 */
+  private visitFile(abs: string, display: string): void {
+    this.dired = null;
+    this.fileSnapshot = null;
+    this.absPath = abs;
+    this.filename = display;
+    this.bufferName = abs.split("/").pop() || abs;
+    this.point = { row: 0, col: 0 };
+    this.top = 0;
+    this.mark = null;
+    this.goalCol = 0;
+    this.modified = false;
+    this.undoStack = [];
+    this.redoStack = [];
+    this.echo = "";
+    this.loadFile();
+  }
+
+  private captureFileSnapshotIfFile(): void {
+    if (this.dired || !this.absPath) return;
+    this.fileSnapshot = {
+      buffer: [...this.buffer],
+      filename: this.filename,
+      absPath: this.absPath,
+      bufferName: this.bufferName,
+      point: { ...this.point },
+      top: this.top,
+      modified: this.modified,
+    };
+  }
+
+  private restoreFileSnapshot(): void {
+    const s = this.fileSnapshot!;
+    this.dired = null;
+    this.buffer = s.buffer;
+    this.filename = s.filename;
+    this.absPath = s.absPath;
+    this.bufferName = s.bufferName;
+    this.point = s.point;
+    this.top = s.top;
+    this.modified = s.modified;
+    this.fileSnapshot = null;
+    this.echo = "";
+    this.clampPoint();
+  }
+
+  /** tab-line: 同ディレクトリの前後のファイルへ移動。 */
+  private switchTab(delta: number): void {
+    if (!this.absPath) {
+      this.echo = "No file in this buffer";
+      return;
+    }
+    const dir = this.dirOf(this.absPath);
+    const files = this.dirFiles(dir);
+    if (files.length <= 1) {
+      this.echo = "No other file in this directory";
+      return;
+    }
+    const cur = files.findIndex((f) => f.abs === this.absPath);
+    let idx = (cur < 0 ? 0 : cur + delta) % files.length;
+    if (idx < 0) idx += files.length;
+    this.visitFile(files[idx].abs, files[idx].name);
   }
 
   // ===== isearch =====
@@ -787,7 +1060,8 @@ export class EmacsEditor {
 
   // ===== 描画 =====
   private textRows(): number {
-    return Math.max(1, this.term.rows - 2);
+    const tab = this.tabLine && !this.dired ? 1 : 0;
+    return Math.max(1, this.term.rows - 2 - tab);
   }
   private scroll(delta: number): void {
     this.point.row = Math.min(Math.max(this.point.row + delta, 0), this.buffer.length - 1);
@@ -810,9 +1084,11 @@ export class EmacsEditor {
     this.ensureVisible();
     const cols = this.term.cols;
     const rows = this.term.rows;
+    const showTab = this.tabLine;
     const textRows = this.textRows();
     const reg = this.region();
     let out = "\x1b[H";
+    if (showTab) out += "\x1b[K" + this.tabLineStr(cols) + "\r\n";
     for (let i = 0; i < textRows; i++) {
       const idx = this.top + i;
       out += "\x1b[K";
@@ -826,11 +1102,112 @@ export class EmacsEditor {
       const col = 1 + this.miniPrompt.length + this.miniInput.length;
       out += `\x1b[${rows};${col}H`;
     } else {
-      const sr = this.point.row - this.top + 1;
+      const sr = this.point.row - this.top + 1 + (showTab ? 1 : 0);
       const sc = this.displayCol(this.point.row, this.point.col) + 1;
       out += `\x1b[${sr};${sc}H`;
     }
     this.term.term.write(out);
+  }
+
+  /** tab-line-mode: 現在ディレクトリのファイルをタブとして上部に並べる。 */
+  private tabLineStr(cols: number): string {
+    const baseBg = "\x1b[48;2;26;30;44m";
+    const dir = this.absPath ? this.dirOf(this.absPath) : this.cwd;
+    const files = this.dirFiles(dir);
+    let s = baseBg;
+    let width = 0;
+    if (files.length === 0) {
+      const label = ` (no files) `;
+      s += "\x1b[38;2;120;128;150m" + label;
+      width = label.length;
+    }
+    for (const f of files) {
+      const label = ` ${f.name} `;
+      if (width + label.length > cols - 1) {
+        s += "\x1b[38;2;120;128;150m…";
+        width += 1;
+        break;
+      }
+      if (f.abs === this.absPath) {
+        s += "\x1b[48;2;72;82;122m\x1b[38;2;240;244;255m" + label + RESET + baseBg;
+      } else {
+        s += "\x1b[38;2;150;160;185m" + label;
+      }
+      width += label.length;
+    }
+    if (width < cols) s += " ".repeat(cols - width);
+    return s + RESET;
+  }
+
+  // ===== dired 描画 =====
+  private renderDired(): void {
+    const d = this.dired!;
+    const cols = this.term.cols;
+    const textRows = Math.max(1, this.term.rows - 2);
+    const headerLines = 2;
+    const listRows = Math.max(1, textRows - headerLines);
+    if (d.line < d.top) d.top = d.line;
+    else if (d.line >= d.top + listRows) d.top = d.line - listRows + 1;
+    if (d.top < 0) d.top = 0;
+
+    let out = "\x1b[H";
+    out += "\x1b[K" + `\x1b[38;2;120;200;255m${d.dir}:` + RESET + "\r\n";
+    out += "\x1b[K" + `  total ${d.entries.length}` + "\r\n";
+    for (let i = 0; i < listRows; i++) {
+      const idx = d.top + i;
+      out += "\x1b[K";
+      if (idx < d.entries.length) out += this.diredLine(d.entries[idx], cols, idx === d.line);
+      out += "\r\n";
+    }
+    out += "\x1b[K" + this.diredModeLine(cols) + "\r\n";
+    out += "\x1b[K" + this.echoLine(cols);
+
+    if (this.mini) {
+      const col = 1 + this.miniPrompt.length + this.miniInput.length;
+      out += `\x1b[${this.term.rows};${col}H`;
+    } else {
+      const sr = d.line - d.top + headerLines + 1;
+      out += `\x1b[${sr};1H`;
+    }
+    this.term.term.write(out);
+  }
+
+  private permString(e: DiredEntry): string {
+    const t = e.type === "dir" ? "d" : e.type === "symlink" ? "l" : "-";
+    const rwx = (b: number): string => (b & 4 ? "r" : "-") + (b & 2 ? "w" : "-") + (b & 1 ? "x" : "-");
+    return t + rwx((e.mode >> 6) & 7) + rwx((e.mode >> 3) & 7) + rwx(e.mode & 7);
+  }
+
+  private fmtDate(dt: Date): string {
+    const day = String(dt.getDate()).padStart(2, " ");
+    const hh = String(dt.getHours()).padStart(2, "0");
+    const mm = String(dt.getMinutes()).padStart(2, "0");
+    return `${MON[dt.getMonth()]} ${day} ${hh}:${mm}`;
+  }
+
+  private diredLine(e: DiredEntry, cols: number, current: boolean): string {
+    const prefix = `  ${this.permString(e)} ${e.owner.padEnd(6).slice(0, 6)} ${e.group.padEnd(6).slice(0, 6)} ${String(e.size).padStart(8)} ${this.fmtDate(e.mtime)} `;
+    const plain = prefix + e.name;
+    if (current) {
+      const padded = plain.length < cols ? plain + " ".repeat(cols - plain.length) : plain.slice(0, cols);
+      return "\x1b[48;2;60;70;110m\x1b[38;2;235;240;252m" + padded + RESET;
+    }
+    const name =
+      e.type === "dir"
+        ? "\x1b[38;2;100;200;255m" + e.name + RESET
+        : e.type === "symlink"
+          ? "\x1b[38;2;235;150;255m" + e.name + RESET
+          : e.name;
+    return prefix + name;
+  }
+
+  private diredModeLine(cols: number): string {
+    const left = `-UUU:%%--  ${this.bufferName}`;
+    const right = `(Dired by name) `;
+    const mid = `   ${this.dired && this.dired.entries.length <= this.term.rows - 4 ? "All" : this.dired && this.dired.top === 0 ? "Top" : "Bot"}   `;
+    let bar = left + mid + right;
+    if (bar.length < cols) bar += "-".repeat(cols - bar.length);
+    return "\x1b[48;2;55;62;90m\x1b[38;2;220;225;240m" + bar.slice(0, cols) + RESET;
   }
 
   private renderLine(idx: number, reg: { start: Pos; end: Pos } | null, cols: number): string {

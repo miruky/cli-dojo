@@ -6,6 +6,7 @@ import { LessonsScreen } from "../views/LessonsScreen";
 import { buildChrome, type Chrome } from "../ui/chrome";
 import { SideMenu } from "../ui/SideMenu";
 import { HelpOverlay } from "../ui/HelpOverlay";
+import { CheatSheet } from "../ui/CheatSheet";
 import { type ModeId } from "../core/modes/types";
 
 /** アプリ全体のオーケストレーション。各部品を結線する。 */
@@ -18,11 +19,16 @@ export class App {
   private menu!: SideMenu;
   private panes!: PaneManager;
   private help = new HelpOverlay();
+  private cheat!: CheatSheet;
+  /** 素のシェル状態で表示するバッジ (linux / ghostty)。 */
+  private shellModeId: ModeId = "linux";
 
   mount(appEl: HTMLElement): void {
+    this.cheat = new CheatSheet({ onInsert: (cmd) => this.insertCommand(cmd) });
     this.chrome = buildChrome(appEl, {
       onHamburger: () => this.menu.toggle(),
       onHelp: () => this.help.toggle(),
+      onCheat: () => this.cheat.toggle(),
     });
     this.menu = new SideMenu(this.chrome.hamburgerBtn, {
       onSelectView: (view) => {
@@ -33,7 +39,14 @@ export class App {
     });
 
     this.panes = new PaneManager(this.chrome.terminalHost, this.history, {
-      onActiveChange: () => this.exposeHook(),
+      onActiveChange: () => {
+        if (!this.panes) return;
+        this.exposeHook();
+        this.syncMode(this.panes.activePane.currentMode());
+      },
+      onModeChange: (pane, mode) => {
+        if (this.panes && pane === this.panes.activePane) this.syncMode(mode);
+      },
     });
     this.lessons = new LessonsScreen({ onTry: (cmd) => this.tryCommand(cmd) });
     this.lessons.mount(this.chrome.lessonsHost);
@@ -67,6 +80,18 @@ export class App {
     this.exposeHook();
   }
 
+  private insertCommand(cmd: string): void {
+    this.router.go("terminal");
+    const pane = this.panes.activePane;
+    pane.fillPrompt(cmd);
+    pane.focus();
+  }
+
+  /** Pane のモード状態 (null=素のシェル) をバッジに反映。 */
+  private syncMode(mode: ModeId | null): void {
+    this.modes.set(mode ?? this.shellModeId);
+  }
+
   private tryCommand(cmd: string): void {
     this.router.go("terminal");
     const pane = this.panes.activePane;
@@ -87,19 +112,24 @@ export class App {
   }
 
   private selectMode(mode: ModeId): void {
-    const wasSame = this.modes.id === mode;
-    this.modes.set(mode);
     this.router.go("terminal");
     this.menu.hide();
     const pane = this.panes.activePane;
-    if (mode === "linux") {
-      pane.exitMode();
-    } else if (mode === "tmux" || mode === "nvim" || mode === "emacs") {
-      pane.launchMode(mode);
-    } else if (mode === "ghostty" && !wasSame && !pane.isInApp()) {
-      pane.notice(
-        "Ghostty: ペイン分割 ctrl+shift+v(右)/ctrl+shift+h(下), 移動 ctrl+h/j/k/l, 閉じる ctrl+x, リサイズ ctrl+,/./;/'",
-      );
+
+    if (mode === "linux" || mode === "ghostty") {
+      // 素のシェル系。現在モードを抜けてからバッジを linux/ghostty に。
+      const wasInApp = pane.isInApp();
+      this.shellModeId = mode;
+      pane.exitMode(); // モード中なら onModeChange(null) が発火
+      this.syncMode(null); // 既にシェルでも確実にバッジ更新
+      if (mode === "ghostty" && !wasInApp) {
+        pane.notice(
+          "Ghostty: ペイン分割 ctrl+shift+v(右)/ctrl+shift+h(下), 移動 ctrl+h/j/k/l, 閉じる ctrl+x, リサイズ ctrl+,/./;/'",
+        );
+      }
+    } else {
+      // tmux / nvim / emacs。同じモードなら何もしない (状態維持)。
+      if (pane.currentMode() !== mode) pane.launchMode(mode);
     }
     pane.focus();
   }

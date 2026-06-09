@@ -1,0 +1,233 @@
+/* ===== トップバーのチートシート起動ボタン ===== */
+.cheat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  transition:
+    background 0.14s,
+    color 0.14s,
+    border-color 0.14s;
+}
+.cheat-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
+  border-color: rgba(120, 140, 200, 0.35);
+}
+.cheat-btn .icon {
+  color: var(--accent);
+}
+@media (max-width: 560px) {
+  .cheat-btn-label {
+    display: none;
+  }
+  .cheat-btn {
+    padding: 0 9px;
+  }
+}
+
+/* ===== 常駐チートシート・パネル (右上) ===== */
+.cheat-panel {
+  position: fixed;
+  top: 58px;
+  right: 20px;
+  z-index: 45;
+  width: clamp(300px, 27vw, 384px);
+  max-height: calc(100vh - 78px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-2);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top right;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.cheat-panel.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.cheat-panel[hidden] {
+  display: none;
+}
+
+.cheat-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px 9px;
+  border-bottom: 1px solid var(--hairline);
+}
+.cheat-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.cheat-title .icon {
+  color: var(--accent);
+}
+.cheat-count {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fg-faint);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.cheat-close {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 13px;
+}
+.cheat-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+}
+
+.cheat-searchwrap {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+.cheat-search {
+  width: 100%;
+  padding: 7px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--hairline);
+  background: rgba(8, 14, 30, 0.6);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cheat-search:focus {
+  border-color: rgba(0, 136, 255, 0.5);
+}
+.cheat-search::placeholder {
+  color: var(--fg-faint);
+}
+
+.cheat-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 10px 14px;
+}
+
+.cheat-section {
+  margin-top: 10px;
+}
+.cheat-section:first-child {
+  margin-top: 2px;
+}
+.cheat-section-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  padding: 5px 4px 5px 8px;
+  margin-bottom: 3px;
+  border-left: 2px solid var(--accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 80%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.cheat-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cheat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+button.cheat-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(120, 140, 200, 0.28);
+}
+.cheat-row.is-keys {
+  cursor: default;
+}
+.cheat-cmd {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  background: rgba(10, 16, 32, 0.55);
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  max-width: 56%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cheat-row.is-keys .cheat-cmd {
+  color: var(--fg);
+}
+.cheat-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--fg-dim);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.cheat-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--fg-faint);
+  font-size: 12.5px;
+}
+
+@media (max-width: 520px) {
+  .cheat-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    top: 54px;
+    max-height: calc(100vh - 70px);
+  }
+  .cheat-cmd {
+    max-width: 48%;
+  }
+}

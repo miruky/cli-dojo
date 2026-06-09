@@ -24,6 +24,8 @@ export class TerminalView {
       lineHeight: 1.2,
       theme: COBALT_THEME,
       scrollback: 5000,
+      // macOS の Option/Alt を Meta として扱う (Emacs の M-x / readline の Alt-b 等)
+      macOptionIsMeta: true,
     });
     this.term.loadAddon(this.fitAddon);
     this.term.onData((data) => this.dataHandler?.(data));

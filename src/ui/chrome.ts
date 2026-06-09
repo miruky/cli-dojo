@@ -14,7 +14,7 @@ export interface Chrome {
 
 export function buildChrome(
   app: HTMLElement,
-  opts: { onHamburger: () => void; onHelp: () => void },
+  opts: { onHamburger: () => void; onHelp: () => void; onCheat: () => void },
 ): Chrome {
   const hamburgerBtn = el(
     "button",
@@ -43,6 +43,16 @@ export function buildChrome(
     el("span", { class: "brand-name", text: "cli-dojo" }),
   ]);
 
+  const cheatBtn = el(
+    "button",
+    {
+      class: "cheat-btn",
+      attrs: { type: "button", "aria-label": "チートシート", title: "チートシート (全コマンド) を常駐表示" },
+      on: { click: () => opts.onCheat() },
+    },
+    [iconEl("list", "", 15), el("span", { class: "cheat-btn-label", text: "チートシート" })],
+  );
+
   const helpBtn = el("button", {
     class: "help-btn",
     text: "?",
@@ -54,6 +64,7 @@ export function buildChrome(
     hamburgerBtn,
     brand,
     el("div", { class: "spacer" }),
+    cheatBtn,
     helpBtn,
     modeIndicator,
   ]);
