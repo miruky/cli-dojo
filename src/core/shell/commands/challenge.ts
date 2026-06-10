@@ -1,5 +1,6 @@
 import type { Command, ExecContext } from "../types";
 import { CHALLENGES, BELTS, beltFor, type Challenge } from "../../../lessons/challenges";
+import { loadStreak } from "../../../lessons/quiz";
 
 /** チャレンジ道場: 出題 → 端末で実際に解く → check/answer で自動判定 → 帯が上がる。 */
 
@@ -15,7 +16,7 @@ const MAGENTA = "\x1b[38;2;251;148;255m";
 const KEY_CLEARED = "cli-dojo.challenges.cleared";
 const KEY_CURRENT = "cli-dojo.challenges.current";
 
-function loadCleared(): Set<number> {
+export function loadCleared(): Set<number> {
   try {
     return new Set(JSON.parse(localStorage.getItem(KEY_CLEARED) ?? "[]") as number[]);
   } catch {
@@ -192,7 +193,12 @@ const dojo: Command = {
     ctx.out("\n");
     ctx.out(`  ${B}🥋 cli-dojo 段位認定${R}\n\n`);
     ctx.out(`  現在の段位: ${color}${B}${belt}${R}\n`);
-    ctx.out(`  進捗:       ${progressBar(cleared.size, CHALLENGES.length)}\n\n`);
+    ctx.out(`  進捗:       ${progressBar(cleared.size, CHALLENGES.length)}\n`);
+    const { streak, doneToday } = loadStreak();
+    if (streak > 0) {
+      ctx.out(`  デイリー:   ${YELLOW}🔥 連続 ${streak} 日${R}${doneToday ? `  ${GREEN}(今日も完了)${R}` : `  ${DIM}(今日はまだ → daily)${R}`}\n`);
+    }
+    ctx.out("\n");
     // カテゴリ別
     const cats = [...new Set(CHALLENGES.map((c) => c.cat))];
     for (const cat of cats) {

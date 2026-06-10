@@ -39,9 +39,10 @@ function gather(ctx: ExecContext, path: string, members: Member[]): void {
   walk(node, path.replace(/\/+$/, ""));
 }
 
-function extract(ctx: ExecContext, members: Member[], verbose: boolean, out: string[]): void {
+function extract(ctx: ExecContext, members: Member[], verbose: boolean, out: string[], chdir: string): void {
+  const baseAbs = ctx.resolve(chdir || ".");
   for (const m of members) {
-    const abs = ctx.resolve(m.path);
+    const abs = ctx.vfs.resolve(baseAbs, m.path);
     if (m.type === "dir") {
       ctx.vfs.mkdirp(abs);
     } else {
@@ -62,10 +63,13 @@ function parseTarArgs(args: string[]): {
   verbose: boolean;
   archive: string;
   files: string[];
+  chdir: string;
 } {
   let create = false, extractMode = false, list = false, verbose = false;
   let needArchive = false;
+  let needChdir = false;
   let archive = "";
+  let chdir = "";
   const files: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -77,6 +81,7 @@ function parseTarArgs(args: string[]): {
         else if (c === "t") list = true;
         else if (c === "v") verbose = true;
         else if (c === "f") needArchive = true;
+        else if (c === "C") needChdir = true;
       }
       continue;
     }
@@ -85,16 +90,25 @@ function parseTarArgs(args: string[]): {
       needArchive = false;
       continue;
     }
+    if (needChdir && chdir === "") {
+      chdir = a;
+      needChdir = false;
+      continue;
+    }
     files.push(a);
   }
-  return { create, extractMode, list, verbose, archive, files };
+  return { create, extractMode, list, verbose, archive, files, chdir };
 }
 
 const tar: Command = {
   name: "tar",
   summary: "アーカイブの作成/展開/一覧",
   run(ctx) {
-    const { create, extractMode, list, verbose, archive, files } = parseTarArgs(ctx.args.slice(1));
+    const { create, extractMode, list, verbose, archive, files, chdir } = parseTarArgs(ctx.args.slice(1));
+    if (chdir && !ctx.vfs.stat(ctx.resolve(chdir))) {
+      ctx.err(`tar: ${chdir}: Cannot chdir: No such file or directory\n`);
+      return 2;
+    }
     if (!archive) {
       ctx.err("tar: アーカイブファイル (-f) を指定してください\n");
       return 2;
@@ -120,7 +134,7 @@ const tar: Command = {
         return 2;
       }
       if (list) for (const m of members) out.push(m.path + (m.type === "dir" ? "/" : ""));
-      else if (extractMode) extract(ctx, members, verbose, out);
+      else if (extractMode) extract(ctx, members, verbose, out, chdir);
     }
     if (out.length) ctx.out(out.join("\n") + "\n");
     return 0;

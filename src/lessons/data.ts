@@ -607,12 +607,12 @@ export const LESSONS: Lesson[] = [
     group: "道場",
     title: "チャレンジ道場 (腕試し)",
     accent: YELLOW,
-    intro: "全40問 + クイズ + vimtutor。出題 → 端末で実際に解く → 自動判定。クリアするほど帯が上がる (白帯→黒帯)。進捗はブラウザに保存。",
+    intro: "全50問 + クイズ60問 + デイリー修行 + vimtutor。出題 → 端末で実際に解く → 自動判定。クリアするほど帯が上がる (白帯→黒帯)。進捗はブラウザに保存。",
     sections: [
       {
         title: "道場の使い方",
         items: [
-          { cmd: "challenge", desc: "問題一覧と進捗を表示 (全40問)" },
+          { cmd: "challenge", desc: "問題一覧と進捗を表示 (全50問)" },
           { cmd: "challenge 1", desc: "問1 に挑戦 (出題を表示)" },
           { cmd: "check", desc: "操作系の問題を判定 (ファイル/権限/git の状態を検査)" },
           { cmd: "answer 42", desc: "回答系の問題に答える" },
@@ -632,14 +632,18 @@ export const LESSONS: Lesson[] = [
           { cmd: "challenge 29", desc: "検索: find でファイルを数える" },
           { cmd: "challenge 32", desc: "JSON: jq で集計" },
           { cmd: "challenge 34", desc: "awk 上級: 列の合計・条件集計" },
-          { cmd: "challenge 40", desc: "卒業試験: 抽出して保存" },
+          { cmd: "challenge 41", desc: "上級・複合: 最大値/展開/2>/コマンド置換 (41〜50)" },
+          { cmd: "challenge 50", desc: "最終試験: コマンド置換 $( ) で集計を書き込む" },
         ],
       },
       {
-        title: "クイズ & チュートリアル",
+        title: "クイズ & 日課",
         items: [
           { cmd: "quiz", desc: "LPIC風4択クイズ ランダム10問 (1〜4キーで回答・解説付き)" },
-          { cmd: "quiz 20", desc: "出題数を増やす (最大36問)" },
+          { cmd: "quiz 20", desc: "出題数を増やす (プールは60問)" },
+          { cmd: "quiz review", desc: "間違えた問題だけ復習 (正解すると卒業)" },
+          { cmd: "daily", desc: "デイリー修行: 日替わり5問。完走で連続日数 🔥 が伸びる" },
+          { cmd: "stats", desc: "修行統計: 使用コマンドTOP10 / 段位 / ベスト / 連続日数" },
           { cmd: "vimtutor", desc: "vim チュートリアル (実際に手を動かして学ぶ)" },
         ],
       },

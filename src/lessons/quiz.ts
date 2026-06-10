@@ -10,6 +10,96 @@ export interface QuizQuestion {
   why: string;
 }
 
+const KEY_WRONG = "cli-dojo.quiz.wrong";
+const KEY_DAILY_LAST = "cli-dojo.daily.last";
+const KEY_DAILY_STREAK = "cli-dojo.daily.streak";
+
+/** 間違えた問題 (問題文をキーに記録)。正解すると消える。 */
+export function loadWrong(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(KEY_WRONG) ?? "[]") as string[]);
+  } catch {
+    return new Set();
+  }
+}
+export function saveWrong(s: Set<string>): void {
+  try {
+    localStorage.setItem(KEY_WRONG, JSON.stringify([...s]));
+  } catch {
+    /* 保存不可でも動作は継続 */
+  }
+}
+
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function loadStreak(): { streak: number; last: string; doneToday: boolean } {
+  try {
+    const last = localStorage.getItem(KEY_DAILY_LAST) ?? "";
+    const streak = parseInt(localStorage.getItem(KEY_DAILY_STREAK) ?? "0", 10) || 0;
+    return { streak, last, doneToday: last === todayStr() };
+  } catch {
+    return { streak: 0, last: "", doneToday: false };
+  }
+}
+
+/** デイリー完走を記録し、新しいストリークを返す。 */
+export function recordDailyDone(): number {
+  const { streak, last, doneToday } = loadStreak();
+  if (doneToday) return streak;
+  const y = new Date(Date.now() - 86400_000);
+  const yesterday = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
+  const next = last === yesterday ? streak + 1 : 1;
+  try {
+    localStorage.setItem(KEY_DAILY_LAST, todayStr());
+    localStorage.setItem(KEY_DAILY_STREAK, String(next));
+  } catch {
+    /* 保存不可 */
+  }
+  return next;
+}
+
+function shuffled<T>(arr: T[], rand: () => number = Math.random): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** 日付シードの乱数 (デイリー出題が全員・終日同じになる)。 */
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export type QuizMode = "normal" | "review" | "daily";
+
+/** モードに応じて出題セットを組み立てる。 */
+export function selectQuiz(mode: QuizMode, count: number): { questions: QuizQuestion[]; title: string } {
+  if (mode === "review") {
+    const wrong = loadWrong();
+    const qs = shuffled(QUIZ_POOL.filter((q) => wrong.has(q.q)));
+    return { questions: qs, title: "復習モード (間違えた問題)" };
+  }
+  if (mode === "daily") {
+    const d = new Date();
+    const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    const qs = shuffled(QUIZ_POOL, mulberry32(seed)).slice(0, 5);
+    return { questions: qs, title: `デイリー修行 ${todayStr()}` };
+  }
+  return { questions: shuffled(QUIZ_POOL).slice(0, Math.max(1, Math.min(count, QUIZ_POOL.length))), title: "Linux クイズ" };
+}
+
 export const QUIZ_POOL: QuizQuestion[] = [
   // ===== 基礎 =====
   {
@@ -312,5 +402,192 @@ export const QUIZ_POOL: QuizQuestion[] = [
     options: ["Ctrl-b %", 'Ctrl-b "', "Ctrl-b c", "Ctrl-b o"],
     answer: 0,
     why: '% が縦分割 (左右)、" が横分割 (上下)。o や矢印でペイン間を移動。',
+  },
+
+  // ===== ファイルシステム =====
+  {
+    cat: "ファイルシステム",
+    q: "/etc ディレクトリに置かれるのは?",
+    options: ["ユーザのホーム", "システムの設定ファイル", "デバイスファイル", "一時ファイル"],
+    answer: 1,
+    why: "/etc=設定, /home=ホーム, /dev=デバイス, /tmp=一時, /var=ログ等の可変データ。FHS は頻出。",
+  },
+  {
+    cat: "ファイルシステム",
+    q: "ログファイルが置かれる標準的な場所は?",
+    options: ["/usr/log", "/etc/log", "/var/log", "/opt/log"],
+    answer: 2,
+    why: "/var/log/syslog や /var/log/auth.log など。journalctl で見る systemd ジャーナルもある。",
+  },
+  {
+    cat: "ファイルシステム",
+    q: "ハードリンクとシンボリックリンクの違いとして正しいのは?",
+    options: [
+      "ハードリンクはディレクトリにも張れる",
+      "シンボリックリンクは別ファイルシステムを指せる",
+      "ハードリンクは元を消すと壊れる",
+      "シンボリックリンクは inode を共有する",
+    ],
+    answer: 1,
+    why: "symlink はパスを指すだけなので FS をまたげる (壊れもする)。hard link は同じ inode の別名。",
+  },
+  {
+    cat: "ファイルシステム",
+    q: "「df -i」で確認できるのは?",
+    options: ["I/O 速度", "inode の使用状況", "マウントオプション", "ディスクの温度"],
+    answer: 1,
+    why: "容量が空いていても inode が枯渇するとファイルを作れない。小さいファイル大量時の落とし穴。",
+  },
+  {
+    cat: "ファイルシステム",
+    q: "マウント中のファイルシステム一覧を見るのは?",
+    options: ["mount", "fdisk -l", "mkfs", "fsck"],
+    answer: 0,
+    why: "mount (引数なし) か findmnt。fdisk はパーティション操作、mkfs は作成、fsck は検査。",
+  },
+
+  // ===== アーカイブ =====
+  {
+    cat: "アーカイブ",
+    q: "tar czf backup.tar.gz dir の「c z f」の意味は?",
+    options: ["作成・gzip・ファイル指定", "確認・zip・強制", "コピー・圧縮率・高速", "作成・暗号化・フィルタ"],
+    answer: 0,
+    why: "c=create, z=gzip, f=ファイル名指定。展開は x に変えて tar xzf。一覧は t。",
+  },
+  {
+    cat: "アーカイブ",
+    q: "file.gz を元に戻すコマンドは?",
+    options: ["ungzip file.gz", "gunzip file.gz", "gzip -c file.gz", "unzip file.gz"],
+    answer: 1,
+    why: "gunzip (= gzip -d)。unzip は .zip 用。xz なら unxz / xz -d。",
+  },
+  {
+    cat: "アーカイブ",
+    q: "tar.gz の中身を展開せずに確認するのは?",
+    options: ["tar tzf file.tar.gz", "tar xzf file.tar.gz", "cat file.tar.gz", "gzip -l file.tar.gz"],
+    answer: 0,
+    why: "t = list。展開前に中身とパス構造を確認するのは事故防止の基本動作。",
+  },
+
+  // ===== systemd・サービス =====
+  {
+    cat: "systemd",
+    q: "サービスを OS 起動時に自動起動させるのは?",
+    options: ["systemctl start nginx", "systemctl enable nginx", "systemctl reload nginx", "service nginx on"],
+    answer: 1,
+    why: "enable=自動起動 ON (今すぐ起動は start)。enable --now で両方やるのが実務の定番。",
+  },
+  {
+    cat: "systemd",
+    q: "サービスのログを見るコマンドは?",
+    options: ["syslog nginx", "journalctl -u nginx", "systemctl log nginx", "dmesg -u nginx"],
+    answer: 1,
+    why: "journalctl -u <unit>。-f で follow、--since today などの絞り込みも頻出。",
+  },
+  {
+    cat: "systemd",
+    q: "cron で「毎日 3:30」に実行する書式は?",
+    options: ["30 3 * * *", "3 30 * * *", "* * 3 30 *", "30 3 * * 0"],
+    answer: 0,
+    why: "分 時 日 月 曜日 の順。末尾 0 は日曜のみ。crontab -e で編集、-l で確認。",
+  },
+
+  // ===== パッケージ =====
+  {
+    cat: "パッケージ",
+    q: "Debian 系でパッケージをインストールするのは?",
+    options: ["yum install", "apt install", "rpm -i", "dnf add"],
+    answer: 1,
+    why: "Debian/Ubuntu=apt (dpkg)、RHEL 系=dnf/yum (rpm)。系統の対応は LPIC 頻出。",
+  },
+  {
+    cat: "パッケージ",
+    q: "インストール済みパッケージにどのファイルが属するか調べる (Debian 系) のは?",
+    options: ["dpkg -S /bin/ls", "apt find /bin/ls", "dpkg -i /bin/ls", "apt-cache rdepends"],
+    answer: 0,
+    why: "dpkg -S (search)。逆にパッケージの中身一覧は dpkg -L <pkg>。",
+  },
+
+  // ===== セキュリティ =====
+  {
+    cat: "セキュリティ",
+    q: "sudo の設定ファイルを安全に編集するコマンドは?",
+    options: ["vi /etc/sudoers", "visudo", "sudoedit /etc/passwd", "chmod 777 /etc/sudoers"],
+    answer: 1,
+    why: "visudo は文法チェック付きで保存するため、ミスでロックアウトされる事故を防げる。",
+  },
+  {
+    cat: "セキュリティ",
+    q: "SSH の公開鍵認証で、サーバ側に置くファイルは?",
+    options: ["~/.ssh/id_rsa", "~/.ssh/authorized_keys", "~/.ssh/known_hosts", "/etc/ssh/sshd_config"],
+    answer: 1,
+    why: "公開鍵を authorized_keys へ。秘密鍵 (id_rsa) は絶対に配らない。known_hosts は接続先の記録。",
+  },
+  {
+    cat: "セキュリティ",
+    q: "setuid ビットが立った実行ファイルの意味は?",
+    options: ["所有者の権限で実行される", "誰も実行できない", "起動時に自動実行される", "削除できない"],
+    answer: 0,
+    why: "passwd コマンド等は setuid root で動く。ls -l では rws のように s が見える。",
+  },
+  {
+    cat: "セキュリティ",
+    q: "ファイルのハッシュ値 (SHA-256) を確認するのは?",
+    options: ["md5check file", "sha256sum file", "hash -a 256 file", "openssl rand file"],
+    answer: 1,
+    why: "ダウンロードしたファイルの改竄チェックの基本。md5sum は衝突攻撃があり検証用途では非推奨。",
+  },
+
+  // ===== パイプ・リダイレクト =====
+  {
+    cat: "パイプ",
+    q: "「ls /nope > out.txt 2>&1」で out.txt に入るのは?",
+    options: ["何も入らない", "エラーメッセージ", "ls の正常出力のみ", "終了コード"],
+    answer: 1,
+    why: "/nope は存在しないので stderr にエラーが出る。2>&1 でそれも out.txt へ合流する。",
+  },
+  {
+    cat: "パイプ",
+    q: "「cmd | tee log.txt」の動作は?",
+    options: ["log.txt に保存だけする", "画面に表示しつつ log.txt にも保存", "log.txt を入力にする", "2回実行する"],
+    answer: 1,
+    why: "tee は T 字パイプ。-a で追記。「見ながら残す」運用作業の定番。",
+  },
+  {
+    cat: "パイプ",
+    q: "「xargs」の役割は?",
+    options: ["引数を環境変数にする", "標準入力をコマンドの引数に変換する", "コマンドを並列実行する", "引数の数を数える"],
+    answer: 1,
+    why: "find ... | xargs wc -l のように「出力 → 引数」の橋渡し。-n1 で1件ずつ実行。",
+  },
+  {
+    cat: "パイプ",
+    q: "「sort -n」の -n が必要なのはなぜ?",
+    options: ["逆順にするため", "数値として比較するため", "重複を消すため", "高速化のため"],
+    answer: 1,
+    why: "無いと辞書順になり 10 < 9 になってしまう (「10」 < 「9」)。-h は 1K/2M などの単位付き対応。",
+  },
+
+  // ===== 正規表現 =====
+  {
+    cat: "正規表現",
+    q: "正規表現「^#」が一致するのは?",
+    options: ["# を含む行", "# で始まる行", "# で終わる行", "# のみの行"],
+    answer: 1,
+    why: "^ は行頭、$ は行末。grep -v '^#' で設定ファイルのコメント行を除くのは定番。",
+  },
+  {
+    cat: "正規表現",
+    q: "「[0-9]{3}」が一致するのは?",
+    options: ["数字3個の並び", "0,9,3 のどれか", "3桁以下の数", "0〜9 を3回繰り返す行全体"],
+    answer: 0,
+    why: "[0-9] は数字1文字、{3} は直前の3回繰り返し。ERE では {} がそのまま使える (BRE は \\{ \\})。",
+  },
+  {
+    cat: "正規表現",
+    q: "「.*」の意味は?",
+    options: ["ドットとアスタリスク", "任意の1文字", "任意の文字の0回以上の繰り返し", "ファイルのグロブ"],
+    answer: 2,
+    why: ". は任意の1文字、* は直前の0回以上。シェルのグロブ (*) と正規表現は別物という点が重要。",
   },
 ];

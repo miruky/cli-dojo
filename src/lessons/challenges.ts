@@ -529,17 +529,137 @@ export const CHALLENGES: Challenge[] = [
       return true;
     },
   },
+
+  // ===== 上級・複合 =====
+  {
+    id: 41, cat: "上級・複合", level: 2,
+    title: "最大値を探せ",
+    task: ["~/data/numbers.txt で最大の数値は? answer <数> で回答。"],
+    hint: "sort -n data/numbers.txt | tail -1",
+    answer: (ctx) => String(Math.max(...fileLines(ctx, `${HOME}/data/numbers.txt`).map((l) => parseInt(l, 10) || 0))),
+  },
+  {
+    id: 42, cat: "上級・複合", level: 2,
+    title: "ユニークな数を数える",
+    task: ["~/data/numbers.txt に重複を除くと何種類の数があるか? answer <数> で回答。"],
+    hint: "sort -u data/numbers.txt | wc -l (sort -n | uniq | wc -l でも)",
+    answer: (ctx) => String(new Set(fileLines(ctx, `${HOME}/data/numbers.txt`).map((l) => l.trim())).size),
+  },
+  {
+    id: 43, cat: "上級・複合", level: 2,
+    title: "ログイン禁止ユーザ",
+    task: ["/etc/passwd でシェルが nologin のユーザは何人か? answer <数> で回答。"],
+    hint: "grep -c nologin /etc/passwd",
+    answer: (ctx) => String(fileLines(ctx, "/etc/passwd").filter((l) => l.includes("nologin")).length),
+  },
+  {
+    id: 44, cat: "上級・複合", level: 3,
+    title: "アーカイブを展開",
+    task: ["~/backup.tar.gz を ~/restore ディレクトリの中に展開せよ。(前提: 問17)", "restore/data/... が現れれば成功。check で判定。"],
+    hint: "mkdir -p ~/restore && tar xzf ~/backup.tar.gz -C ~/restore",
+    verify(ctx) {
+      const dir = ctx.vfs.stat(`${HOME}/restore/data`);
+      if (!dir || dir.type !== "dir") return "~/restore/data がありません。tar xzf backup.tar.gz -C ~/restore で展開してください。";
+      if (!dir.children || dir.children.size < 3) return "restore/data の中身が少なすぎます。展開に失敗していませんか?";
+      return true;
+    },
+  },
+  {
+    id: 45, cat: "上級・複合", level: 2,
+    title: "ちょうど5行目",
+    task: ["~/data/numbers.txt の 5 行目の数値は? answer <数> で回答。"],
+    hint: "sed -n 5p data/numbers.txt (または head -5 | tail -1)",
+    answer: (ctx) => fileLines(ctx, `${HOME}/data/numbers.txt`)[4]?.trim() ?? "",
+  },
+  {
+    id: 46, cat: "上級・複合", level: 3,
+    title: "履歴を積み上げろ",
+    task: ["~/training リポジトリのコミットを 2 つ以上にせよ。(前提: 問19)", "ファイルを変更 → add → commit。check で判定。"],
+    hint: "cd ~/training && echo more >> a.txt && git add . && git commit -m 'second'",
+    verify(ctx) {
+      const snap = repoSnapshot(ctx.vfs, `${HOME}/training`);
+      if (!snap) return "~/training がリポジトリではありません (問19 が先です)。";
+      if (snap.commits < 2) return `現在 ${snap.commits} コミットです。もう 1 つ積んでください。`;
+      return true;
+    },
+  },
+  {
+    id: 47, cat: "上級・複合", level: 2,
+    title: "エラーだけを保存",
+    task: ["存在しないパス /nonexistent を ls して、その「エラー出力」を ~/error.log に保存せよ。", "ヒント: エラーは標準出力ではなく標準エラー (FD 2) に出る。check で判定。"],
+    hint: "ls /nonexistent 2> ~/error.log",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/error.log`);
+      if (!n || n.type !== "file") return "~/error.log がありません。2> を使いましたか?";
+      if (n.content.trim() === "") return "error.log が空です。2> (標準エラーのリダイレクト) を使ってください。";
+      return true;
+    },
+  },
+  {
+    id: 48, cat: "上級・複合", level: 3,
+    title: "Markdown の総行数",
+    task: ["ホームディレクトリ以下の全 .md ファイルの行数合計は? answer <数> で回答。"],
+    hint: "find ~ -name '*.md' | xargs wc -l (合計は total 行)",
+    answer: (ctx) => {
+      let total = 0;
+      const walk = (abs: string, depth: number): void => {
+        const node = ctx.vfs.stat(abs);
+        if (!node || !node.children || depth > 12) return;
+        for (const [name, child] of node.children) {
+          const p = (abs === "/" ? "" : abs) + "/" + name;
+          if (child.type === "file" && name.endsWith(".md")) {
+            const lines = child.content.split("\n");
+            if (lines.length && lines[lines.length - 1] === "") lines.pop();
+            total += lines.length;
+          }
+          if (child.type === "dir") walk(p, depth + 1);
+        }
+      };
+      walk(HOME, 0);
+      return String(total);
+    },
+  },
+  {
+    id: 49, cat: "上級・複合", level: 2,
+    title: "記号モードで chmod",
+    task: ["~/training/log1.txt に「グループの書き込み権限」を追加せよ。(前提: 問4)", "8進数でも記号モード (g+w) でも OK。check で判定。"],
+    hint: "chmod g+w ~/training/log1.txt",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/training/log1.txt`);
+      if (!n) return "~/training/log1.txt がありません (問4 が先です)。";
+      if ((n.mode & 0o020) === 0) return `現在 ${(n.mode & 0o777).toString(8)} です。グループに w を足してください (g+w)。`;
+      return true;
+    },
+  },
+  {
+    id: 50, cat: "上級・複合", level: 3,
+    title: "コマンド置換 (最終試験)",
+    task: [
+      "~/summary.txt に「ERROR:<N>」という 1 行を書き込め。",
+      "<N> は ~/logs/app.log の ERROR 行数。手で数えず、コマンド置換 $( ) で埋め込むのが流儀。",
+      "check で判定。",
+    ],
+    hint: 'echo "ERROR:$(grep -c ERROR logs/app.log)" > ~/summary.txt',
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/summary.txt`);
+      if (!n || n.type !== "file") return "~/summary.txt がありません。";
+      const expected = `ERROR:${fileLines(ctx, `${HOME}/logs/app.log`).filter((l) => l.includes("ERROR")).length}`;
+      const got = n.content.trim();
+      if (got !== expected) return `中身が「${got}」です。期待は「${expected}」(コマンド置換で数を埋め込む)。`;
+      return true;
+    },
+  },
 ];
 
 /** 帯ランク (クリア数 → 称号)。 */
 export const BELTS: Array<[number, string, string]> = [
   // [必要クリア数, 帯, 色ANSI]
   [0, "白帯", "\x1b[38;2;230;234;245m"],
-  [8, "黄帯", "\x1b[38;2;255;198;0m"],
-  [16, "緑帯", "\x1b[38;2;126;214;126m"],
-  [24, "青帯", "\x1b[38;2;120;170;255m"],
-  [32, "茶帯", "\x1b[38;2;200;140;80m"],
-  [40, "黒帯 (師範)", "\x1b[1m\x1b[38;2;240;244;255m"],
+  [10, "黄帯", "\x1b[38;2;255;198;0m"],
+  [20, "緑帯", "\x1b[38;2;126;214;126m"],
+  [30, "青帯", "\x1b[38;2;120;170;255m"],
+  [40, "茶帯", "\x1b[38;2;200;140;80m"],
+  [50, "黒帯 (師範)", "\x1b[1m\x1b[38;2;240;244;255m"],
 ];
 
 export function beltFor(cleared: number): [string, string] {

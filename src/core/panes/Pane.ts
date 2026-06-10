@@ -14,6 +14,7 @@ import { TrainApp } from "../apps/Train";
 import { FzfApp } from "../apps/Fzf";
 import { WatchApp } from "../apps/Watch";
 import { QuizApp } from "../apps/Quiz";
+import { selectQuiz, recordDailyDone, type QuizMode } from "../../lessons/quiz";
 import type { LaunchPayload } from "../shell/types";
 import type { ModeId } from "../modes/types";
 
@@ -236,8 +237,20 @@ export class Pane {
       );
     }
     if (name === "quiz") {
+      const mode = (payload?.mode ?? "normal") as QuizMode;
+      const sel = selectQuiz(mode, payload?.count ?? 10);
+      if (sel.questions.length === 0) return false;
       return this.launchTermApp(
-        new QuizApp({ term: this.terminal, count: payload?.count ?? 10, onExit: () => this.exitEditor() }),
+        new QuizApp({
+          term: this.terminal,
+          questions: sel.questions,
+          title: sel.title,
+          onFinish:
+            mode === "daily"
+              ? () => [`\x1b[38;2;255;198;0m🔥 デイリー修行 完走! 連続 ${recordDailyDone()} 日目\x1b[0m`]
+              : undefined,
+          onExit: () => this.exitEditor(),
+        }),
       );
     }
     if (name === "watch") {

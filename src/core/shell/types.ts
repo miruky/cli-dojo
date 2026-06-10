@@ -32,6 +32,8 @@ export interface LaunchPayload {
   interval?: number;
   /** 出題数 (quiz)。 */
   count?: number;
+  /** 出題モード (quiz: normal / review / daily)。 */
+  mode?: string;
 }
 
 export interface ExecContext {

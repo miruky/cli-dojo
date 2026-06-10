@@ -4,6 +4,7 @@ import { Environment } from "./Environment";
 import { Executor, type ExecIO } from "./Executor";
 import { allCommands, buildRegistry } from "./commands";
 import { ensureSeedRepos } from "./commands/git";
+import { recordUsage } from "./usage";
 import type { Command, ExecContext, LaunchPayload, ShellServices } from "./types";
 import type { History } from "../terminal/History";
 import type { CompletionResult } from "../terminal/LineEditor";
@@ -93,6 +94,7 @@ export class Shell {
   }
 
   run(line: string): number {
+    recordUsage(line, (n) => this.registry.has(n) || this.aliases.has(n));
     const io: ExecIO = {
       print: (s) => this.writeFn(s.replace(/\n/g, "\r\n")),
       printErr: (s) =>

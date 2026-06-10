@@ -1,12 +1,16 @@
 import type { TerminalView } from "../terminal/TerminalView";
-import { QUIZ_POOL, type QuizQuestion } from "../../lessons/quiz";
+import { loadWrong, saveWrong, type QuizQuestion } from "../../lessons/quiz";
 import { padAnsi } from "./util";
 import { charWidth } from "../terminal/wcwidth";
 
 export interface QuizOptions {
   term: TerminalView;
-  /** 出題数 (プールからランダム抽出)。 */
-  count: number;
+  /** 出題セット (selectQuiz で組み立てる)。 */
+  questions: QuizQuestion[];
+  /** ヘッダ/結果に出すタイトル。 */
+  title: string;
+  /** 全問終了 (結果画面到達) 時に呼ぶ。返した行を結果に追記表示。 */
+  onFinish?: (score: number, total: number) => string[] | void;
   onExit: () => void;
 }
 
@@ -44,22 +48,22 @@ function wrapJp(text: string, width: number): string[] {
 export class QuizApp {
   private term: TerminalView;
   private onExit: () => void;
+  private onFinish?: QuizOptions["onFinish"];
+  private title: string;
   private questions: QuizQuestion[];
   private index = 0;
   private score = 0;
   private phase: "question" | "feedback" | "result" = "question";
   private selected = -1;
+  private resultNote: string[] = [];
   private done = false;
 
   constructor(opts: QuizOptions) {
     this.term = opts.term;
     this.onExit = opts.onExit;
-    const pool = [...QUIZ_POOL];
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    this.questions = pool.slice(0, Math.max(1, Math.min(opts.count, pool.length)));
+    this.onFinish = opts.onFinish;
+    this.title = opts.title;
+    this.questions = opts.questions;
   }
 
   start(): void {
@@ -90,8 +94,15 @@ export class QuizApp {
     if (this.phase === "question") {
       const n = parseInt(data, 10);
       if (n >= 1 && n <= this.questions[this.index].options.length) {
+        const q = this.questions[this.index];
         this.selected = n - 1;
-        if (this.selected === this.questions[this.index].answer) this.score++;
+        const correct = this.selected === q.answer;
+        if (correct) this.score++;
+        // 間違い記録: 不正解なら復習リストへ、正解なら卒業
+        const wrong = loadWrong();
+        if (correct) wrong.delete(q.q);
+        else wrong.add(q.q);
+        saveWrong(wrong);
         this.phase = "feedback";
         this.render();
       }
@@ -102,6 +113,7 @@ export class QuizApp {
         if (this.index + 1 >= this.questions.length) {
           this.phase = "result";
           this.saveBest();
+          this.resultNote = this.onFinish?.(this.score, this.questions.length) ?? [];
         } else {
           this.index++;
           this.selected = -1;
@@ -153,7 +165,7 @@ export class QuizApp {
         : pct >= 80 ? `${GREEN}${B}素晴らしい! 黒帯クラスの知識です。${R}`
         : pct >= 60 ? `${YELLOW}いい線です。間違えた所を man で復習しよう。${R}`
         : `${CYAN}伸びしろしかない! レッスンから再挑戦しよう。${R}`;
-      lines.push(`  ${B}📝 クイズ結果${R}`);
+      lines.push(`  ${B}📝 ${this.title} — 結果${R}`);
       lines.push("");
       const barW = 30;
       const fill = Math.round((this.score / this.questions.length) * barW);
@@ -161,14 +173,16 @@ export class QuizApp {
       lines.push(`  ${GREEN}${"█".repeat(fill)}${DIM}${"░".repeat(barW - fill)}${R}`);
       lines.push("");
       lines.push("  " + grade);
+      for (const l of this.resultNote) lines.push("  " + l);
       lines.push("");
-      lines.push(`  ${DIM}ベストスコア: ${Math.max(this.best(), pct)}%${R}`);
+      const wrongCount = loadWrong().size;
+      lines.push(`  ${DIM}ベストスコア: ${Math.max(this.best(), pct)}%${wrongCount ? `  /  復習待ち: ${wrongCount}問 (quiz review)` : ""}${R}`);
       lines.push("");
       lines.push(`  ${DIM}Enter で終了 / もう一度: quiz${R}`);
     } else {
       const q = this.questions[this.index];
       lines.push(
-        `  ${B}📝 Linux クイズ${R}  ${DIM}問 ${this.index + 1}/${this.questions.length}  [${q.cat}]  スコア ${this.score}${R}`,
+        `  ${B}📝 ${this.title}${R}  ${DIM}問 ${this.index + 1}/${this.questions.length}  [${q.cat}]  スコア ${this.score}${R}`,
       );
       lines.push("  " + DIM + "─".repeat(Math.min(cols - 4, 78)) + R);
       lines.push("");
