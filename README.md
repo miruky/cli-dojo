@@ -58,6 +58,12 @@ npm run preview  # ビルド結果のプレビュー
 
 すべて Phase 0〜11 として段階的に実装・デプロイ済み。
 
+## ライセンス
+
+- コード: [MIT License](LICENSE)
+- 同梱フォント (CaskaydiaMono Nerd Font): [SIL Open Font License 1.1](src/fonts/LICENSE-OFL.txt)
+  (Cascadia Code (c) Microsoft Corporation / Nerd Fonts パッチ版)
+
 ---
 
 Generated with [Claude Code](https://claude.com/claude-code)
