@@ -43,6 +43,7 @@ export class SideMenu {
       el("div", { class: "menu-label", text: "表示" }),
       this.viewButton("terminal", "monitor", "ターミナル", cb),
       this.viewButton("lessons", "book", "レッスン", cb),
+      this.viewButton("cards", "grid", "カード一問一答", cb),
     ]);
 
     const modeSection = el("div", { class: "menu-section" }, [
@@ -53,6 +54,18 @@ export class SideMenu {
     const footer = el("div", { class: "menu-footer" }, [
       el("a", {
         class: "menu-link",
+        text: "使い方ツアーを見る",
+        attrs: { href: "#", role: "button" },
+        on: {
+          click: (e: Event) => {
+            e.preventDefault();
+            this.hide();
+            window.dispatchEvent(new CustomEvent("cli-dojo:open-tour"));
+          },
+        },
+      }),
+      el("a", {
+        class: "menu-link",
         text: "GitHub リポジトリ →",
         attrs: {
           href: "https://github.com/miruky/cli-dojo",
@@ -60,7 +73,7 @@ export class SideMenu {
           rel: "noopener",
         },
       }),
-      el("div", { class: "menu-version", text: "cli-dojo · 開発中" }),
+      el("div", { class: "menu-version", text: "cli-dojo" }),
     ]);
 
     this.aside = el(

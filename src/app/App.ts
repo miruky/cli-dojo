@@ -3,10 +3,12 @@ import { Router } from "../router";
 import { History } from "../core/terminal/History";
 import { PaneManager } from "../core/panes/PaneManager";
 import { LessonsScreen } from "../views/LessonsScreen";
+import { CardsScreen } from "../views/CardsScreen";
 import { buildChrome, type Chrome } from "../ui/chrome";
 import { SideMenu } from "../ui/SideMenu";
 import { HelpOverlay } from "../ui/HelpOverlay";
 import { CheatSheet } from "../ui/CheatSheet";
+import { WelcomeTour } from "../ui/WelcomeTour";
 import { type ModeId } from "../core/modes/types";
 
 /** アプリ全体のオーケストレーション。各部品を結線する。 */
@@ -14,6 +16,7 @@ export class App {
   private modes = new ModeManager();
   private router = new Router();
   private lessons!: LessonsScreen;
+  private cards!: CardsScreen;
   private history = new History("cli-dojo.history");
   private chrome!: Chrome;
   private menu!: SideMenu;
@@ -23,12 +26,16 @@ export class App {
   /** 素のシェル状態で表示するバッジ (linux / ghostty)。 */
   private shellModeId: ModeId = "linux";
 
+  private tour!: WelcomeTour;
+
   mount(appEl: HTMLElement): void {
     this.cheat = new CheatSheet({ onInsert: (cmd) => this.insertCommand(cmd) });
+    this.tour = new WelcomeTour({ onInsert: (cmd) => this.insertCommand(cmd) });
     this.chrome = buildChrome(appEl, {
       onHamburger: () => this.menu.toggle(),
       onHelp: () => this.help.toggle(),
       onCheat: () => this.cheat.toggle(),
+      onBelt: () => this.tryCommand("challenge"),
     });
     this.menu = new SideMenu(this.chrome.hamburgerBtn, {
       onSelectView: (view) => {
@@ -50,6 +57,8 @@ export class App {
     });
     this.lessons = new LessonsScreen({ onTry: (cmd) => this.tryCommand(cmd) });
     this.lessons.mount(this.chrome.lessonsHost);
+    this.cards = new CardsScreen();
+    this.cards.mount(this.chrome.cardsHost);
 
     this.router.changed.on((view) => {
       this.chrome.setActiveView(view);
@@ -58,7 +67,11 @@ export class App {
         this.panes.activePane.fit();
         this.panes.activePane.focus();
       }
+      if (view === "cards") this.cards.focus();
     });
+
+    // `cards` コマンドからカード画面を開く
+    window.addEventListener("cli-dojo:open-cards" as keyof WindowEventMap, () => this.router.go("cards"));
 
     this.modes.changed.on((meta) => {
       this.chrome.setMode(meta);
@@ -78,6 +91,7 @@ export class App {
     });
 
     this.exposeHook();
+    this.tour.maybeShow();
   }
 
   private insertCommand(cmd: string): void {

@@ -1,6 +1,7 @@
 import type { Command } from "../types";
 import { parseArgs, formatColumns, visibleWidth } from "./util";
-import { cyan, dim, yellow } from "../../terminal/ansi";
+import { bold, cyan, dim, green, magenta, yellow } from "../../terminal/ansi";
+import { saveAliases } from "../aliasStore";
 
 const BUILTINS = new Set([
   "cd", "pwd", "export", "unset", "alias", "unalias", "history", "help",
@@ -27,10 +28,21 @@ const help: Command = {
       }
       return code;
     }
-    ctx.out(yellow("cli-dojo シェル") + dim(" — 利用可能なコマンド\n\n"));
+    const has = (n: string): boolean => cmds.some((c) => c.name === n);
+    const pick = (names: string[]): string =>
+      names.filter(has).map((n) => green(n)).join(dim("  "));
+
+    ctx.out("\n" + bold(yellow("cli-dojo シェル")) + dim(` — 全 ${cmds.length} コマンドが使えます\n\n`));
+    ctx.out(`  ${bold(magenta("学ぶ・鍛える"))}\n`);
+    ctx.out(`    ${pick(["challenge", "quiz", "cards", "daily", "stats", "vimtutor", "tour", "man", "tldr"])}\n\n`);
+    ctx.out(`  ${bold(magenta("まずはこの辺りから"))}\n`);
+    ctx.out(`    ${pick(["ls", "cd", "cat", "grep", "find", "sed", "awk", "ps", "git", "less", "htop"])}\n\n`);
+    ctx.out(`  ${bold(magenta("見た目が楽しい"))}\n`);
+    ctx.out(`    ${pick(["neofetch", "eza", "bat", "cmatrix", "cowsay", "figlet", "lolcat", "sl"])}\n\n`);
+    ctx.out(`  ${bold(magenta("全コマンド"))}\n`);
     const items = cmds.map((c) => ({ text: cyan(c.name), w: visibleWidth(c.name) }));
     ctx.out(formatColumns(items, ctx.cols) + "\n\n");
-    ctx.out(dim("詳しくは `help <コマンド>` / 主要オプション(-l, -r, -n …)に対応しています。\n"));
+    ctx.out(dim("  help <コマンド> で一行説明 / man <コマンド> で詳細 / 右上のチートシートも便利です。\n"));
     return 0;
   },
 };
@@ -128,10 +140,13 @@ const alias: Command = {
       return 0;
     }
     let code = 0;
+    let changed = false;
     for (const a of rest) {
       const eq = a.indexOf("=");
-      if (eq >= 0) aliases.set(a.slice(0, eq), a.slice(eq + 1));
-      else {
+      if (eq >= 0) {
+        aliases.set(a.slice(0, eq), a.slice(eq + 1));
+        changed = true;
+      } else {
         const v = aliases.get(a);
         if (v !== undefined) ctx.out(`alias ${a}='${v}'\n`);
         else {
@@ -140,6 +155,7 @@ const alias: Command = {
         }
       }
     }
+    if (changed) saveAliases(aliases);
     return code;
   },
 };
@@ -151,6 +167,7 @@ const unalias: Command = {
     const aliases = ctx.services.aliases();
     const { rest } = parseArgs(ctx.args);
     for (const a of rest) aliases.delete(a);
+    if (rest.length) saveAliases(aliases);
     return 0;
   },
 };

@@ -1,9 +1,9 @@
-# cli-dojo 🥋
+# cli-dojo
 
 ブラウザだけで完結する **CLI 練習道場**。
 Linux / Ghostty / tmux / Neovim / Emacs を、実際に動くコマンドラインとレッスンで練習できます。
 
-> 🌐 公開URL: https://miruky.github.io/cli-dojo/
+> 公開URL: https://miruky.github.io/cli-dojo/
 
 ## これは何か
 
@@ -34,7 +34,9 @@ npm run preview  # ビルド結果のプレビュー
 - **チャレンジ道場 (全50問)**: `challenge` で出題 → 端末で実際に解く → `check`/`answer` で自動判定。
   基礎/パイプ/正規表現/find/JSON/awk/Git/エディタ/スクリプト/上級複合。クリア数で帯が上がる (白帯→黒帯)。
 - **クイズ & 日課**: `quiz` (LPIC風4択60問・解説付き)、`quiz review` (間違えた問題だけ復習)、
-  `daily` (日替わり5問で連続日数 🔥)、`stats` (使用コマンドTOP10などの修行統計)、`vimtutor`。
+  `daily` (日替わり5問で連続日数)、`stats` (使用コマンドTOP10などの修行統計)、`vimtutor`。
+- **カード一問一答 (`cards`)**: 全コマンドを収録したフラッシュカード。お題を読んで
+  カード内のターミナルにコマンドを打つと自動判定、スライドして次のカードへ。習得記録付き。
 - **パイプ実践レシピ**: `ls -la | grep '^d'` からログ集計ワンライナーまで、
   クリックで端末に流し込める実務レシピ集。
 - **Git (本当に動く)**: init/status/add/commit/log/diff/show/branch/checkout が VFS 上で動作。
@@ -58,4 +60,4 @@ npm run preview  # ビルド結果のプレビュー
 
 ---
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Generated with [Claude Code](https://claude.com/claude-code)

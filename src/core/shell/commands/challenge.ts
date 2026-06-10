@@ -29,6 +29,8 @@ function saveCleared(s: Set<number>): void {
   } catch {
     /* storage 不可なら進捗はセッション内のみ */
   }
+  // トップバーの帯バッジ等に即時反映させる
+  window.dispatchEvent(new CustomEvent("cli-dojo:progress"));
 }
 function loadCurrent(): number | null {
   try {
@@ -73,7 +75,7 @@ function clearAndCelebrate(ctx: ExecContext, c: Challenge, cleared: Set<number>)
   ctx.out(`${GREEN}${B}✔ 正解! 問${c.id}「${c.title}」クリア!${R}\n`);
   ctx.out(`  ${progressBar(cleared.size, CHALLENGES.length)}\n`);
   if (belt !== before) {
-    ctx.out(`\n  ${color}${B}🥋 昇段! あなたは ${belt} になりました!${R}\n`);
+    ctx.out(`\n  ${color}${B}\uf19d 昇段! あなたは ${belt} になりました!${R}\n`);
   }
   const next = CHALLENGES.find((x) => !cleared.has(x.id));
   if (next) ctx.out(`${DIM}  次へ: challenge ${next.id}${R}\n`);
@@ -98,7 +100,7 @@ const challenge: Command = {
       return 0;
     }
     const [belt, color] = beltFor(cleared.size);
-    ctx.out(`\n  ${B}🥋 チャレンジ道場${R}  ${color}${B}${belt}${R}  ${progressBar(cleared.size, CHALLENGES.length)}\n`);
+    ctx.out(`\n  ${B}\uf19d チャレンジ道場${R}  ${color}${B}${belt}${R}  ${progressBar(cleared.size, CHALLENGES.length)}\n`);
     ctx.out(`${DIM}  challenge <番号> で出題 → 端末で実際に解く → check / answer <値> で判定${R}\n`);
     let cat = "";
     for (const c of CHALLENGES) {
@@ -179,7 +181,7 @@ const hint: Command = {
   run(ctx) {
     const c = currentChallenge(ctx);
     if (!c) return 1;
-    ctx.out(`${YELLOW}💡 ヒント (問${c.id}):${R} ${c.hint}\n`);
+    ctx.out(`${YELLOW}\uf0eb ヒント (問${c.id}):${R} ${c.hint}\n`);
     return 0;
   },
 };
@@ -191,12 +193,12 @@ const dojo: Command = {
     const cleared = loadCleared();
     const [belt, color] = beltFor(cleared.size);
     ctx.out("\n");
-    ctx.out(`  ${B}🥋 cli-dojo 段位認定${R}\n\n`);
+    ctx.out(`  ${B}\uf19d cli-dojo 段位認定${R}\n\n`);
     ctx.out(`  現在の段位: ${color}${B}${belt}${R}\n`);
     ctx.out(`  進捗:       ${progressBar(cleared.size, CHALLENGES.length)}\n`);
     const { streak, doneToday } = loadStreak();
     if (streak > 0) {
-      ctx.out(`  デイリー:   ${YELLOW}🔥 連続 ${streak} 日${R}${doneToday ? `  ${GREEN}(今日も完了)${R}` : `  ${DIM}(今日はまだ → daily)${R}`}\n`);
+      ctx.out(`  デイリー:   ${YELLOW}\uf06d 連続 ${streak} 日${R}${doneToday ? `  ${GREEN}(今日も完了)${R}` : `  ${DIM}(今日はまだ → daily)${R}`}\n`);
     }
     ctx.out("\n");
     // カテゴリ別

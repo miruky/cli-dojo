@@ -165,7 +165,7 @@ export class QuizApp {
         : pct >= 80 ? `${GREEN}${B}素晴らしい! 黒帯クラスの知識です。${R}`
         : pct >= 60 ? `${YELLOW}いい線です。間違えた所を man で復習しよう。${R}`
         : `${CYAN}伸びしろしかない! レッスンから再挑戦しよう。${R}`;
-      lines.push(`  ${B}📝 ${this.title} — 結果${R}`);
+      lines.push(`  ${B}\uf044 ${this.title} — 結果${R}`);
       lines.push("");
       const barW = 30;
       const fill = Math.round((this.score / this.questions.length) * barW);
@@ -182,7 +182,7 @@ export class QuizApp {
     } else {
       const q = this.questions[this.index];
       lines.push(
-        `  ${B}📝 ${this.title}${R}  ${DIM}問 ${this.index + 1}/${this.questions.length}  [${q.cat}]  スコア ${this.score}${R}`,
+        `  ${B}\uf044 ${this.title}${R}  ${DIM}問 ${this.index + 1}/${this.questions.length}  [${q.cat}]  スコア ${this.score}${R}`,
       );
       lines.push("  " + DIM + "─".repeat(Math.min(cols - 4, 78)) + R);
       lines.push("");
@@ -209,7 +209,7 @@ export class QuizApp {
         const ok = this.selected === q.answer;
         lines.push(ok ? `  ${GREEN}${B}正解!${R}` : `  ${RED}${B}残念!${R} 正解は ${GREEN}${q.answer + 1}) ${q.options[q.answer]}${R}`);
         lines.push("");
-        for (const l of wrapJp("💡 " + q.why, width)) lines.push("  " + YELLOW + l + R);
+        for (const l of wrapJp("\uf0eb " + q.why, width)) lines.push("  " + YELLOW + l + R);
         lines.push("");
         lines.push(`  ${DIM}Enter / Space で${this.index + 1 >= this.questions.length ? "結果へ" : "次の問題へ"} (q で中断)${R}`);
       } else {

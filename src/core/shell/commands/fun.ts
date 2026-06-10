@@ -228,8 +228,44 @@ function wrapText(text: string, width: number): string[] {
   return lines.length ? lines : [""];
 }
 
+const COW_BODIES: Record<string, string[]> = {
+  default: [
+    "        {t}   ^__^",
+    "         {t}  (oo)\\_______",
+    "            (__)\\       )\\/\\",
+    "                ||----w |",
+    "                ||     ||",
+  ],
+  tux: [
+    "   {t}",
+    "    {t}",
+    "        .--.",
+    "       |o_o |",
+    "       |:_/ |",
+    "      //   \\ \\",
+    "     (|     | )",
+    "    /'\\_   _/`\\",
+    "    \\___)=(___/",
+  ],
+};
+
 function cowsayRun(ctx: ExecContext, think: boolean): number {
-  const text = ctx.args.slice(1).filter((a) => !a.startsWith("-")).join(" ") || ctx.stdin.trim() || "Moo!";
+  const args = ctx.args.slice(1);
+  let body = COW_BODIES.default;
+  const words: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "-f") {
+      const name = args[++i] ?? "";
+      body = COW_BODIES[name] ?? body;
+      if (!COW_BODIES[name]) {
+        ctx.err(`cowsay: ${name} というキャラはいません (default / tux)\n`);
+        return 1;
+      }
+    } else if (!args[i].startsWith("-")) {
+      words.push(args[i]);
+    }
+  }
+  const text = words.join(" ") || ctx.stdin.trim() || "Moo!";
   const lines = wrapText(text, 38);
   const w = Math.max(...lines.map((l) => stringWidth(l)));
   const pad = (l: string): string => l + " ".repeat(Math.max(0, w - stringWidth(l)));
@@ -250,11 +286,7 @@ function cowsayRun(ctx: ExecContext, think: boolean): number {
   }
   ctx.out(" " + "-".repeat(w + 2) + "\n");
   const c = think ? "o" : "\\";
-  ctx.out(`        ${c}   ^__^\n`);
-  ctx.out(`         ${c}  (oo)\\_______\n`);
-  ctx.out("            (__)\\       )\\/\\\n");
-  ctx.out("                ||----w |\n");
-  ctx.out("                ||     ||\n");
+  for (const line of body) ctx.out(line.replace(/\{t\}/g, c) + "\n");
   return 0;
 }
 

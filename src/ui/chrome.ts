@@ -2,19 +2,29 @@ import { el } from "../util/dom";
 import { iconEl } from "./icons";
 import type { ViewId } from "../router";
 import type { ModeMeta } from "../core/modes/types";
+import { CHALLENGES, beltCssFor } from "../lessons/challenges";
 
 /** トップバー + コンテンツ領域 (端末/レッスンの2画面) を #app 内に構築する。 */
 export interface Chrome {
   terminalHost: HTMLElement;
   lessonsHost: HTMLElement;
+  cardsHost: HTMLElement;
   hamburgerBtn: HTMLButtonElement;
   setActiveView(view: ViewId): void;
   setMode(meta: ModeMeta): void;
 }
 
+function clearedCount(): number {
+  try {
+    return (JSON.parse(localStorage.getItem("cli-dojo.challenges.cleared") ?? "[]") as number[]).length;
+  } catch {
+    return 0;
+  }
+}
+
 export function buildChrome(
   app: HTMLElement,
-  opts: { onHamburger: () => void; onHelp: () => void; onCheat: () => void },
+  opts: { onHamburger: () => void; onHelp: () => void; onCheat: () => void; onBelt: () => void },
 ): Chrome {
   const hamburgerBtn = el(
     "button",
@@ -60,10 +70,33 @@ export function buildChrome(
     on: { click: () => opts.onHelp() },
   });
 
+  // 道場の帯バッジ (チャレンジクリアで即時更新)
+  const beltName = el("span", { class: "belt-name" });
+  const beltCount = el("span", { class: "belt-count" });
+  const beltChip = el(
+    "button",
+    {
+      class: "belt-chip",
+      attrs: { type: "button", title: "チャレンジ道場の進捗 (クリックで challenge を実行)" },
+      on: { click: () => opts.onBelt() },
+    },
+    [iconEl("award", "", 13), beltName, beltCount],
+  );
+  const refreshBelt = (): void => {
+    const n = clearedCount();
+    const [name, css] = beltCssFor(n);
+    beltName.textContent = name;
+    beltCount.textContent = `${n}/${CHALLENGES.length}`;
+    beltChip.style.setProperty("--belt-color", css);
+  };
+  refreshBelt();
+  window.addEventListener("cli-dojo:progress" as keyof WindowEventMap, refreshBelt);
+
   const topbar = el("header", { class: "topbar" }, [
     hamburgerBtn,
     brand,
     el("div", { class: "spacer" }),
+    beltChip,
     cheatBtn,
     helpBtn,
     modeIndicator,
@@ -80,9 +113,14 @@ export function buildChrome(
   ]);
   screenLessons.hidden = true;
 
+  const cardsHost = el("div", { class: "cards-host" });
+  const screenCards = el("section", { class: "screen screen-cards" }, [cardsHost]);
+  screenCards.hidden = true;
+
   const content = el("main", { class: "content" }, [
     screenTerminal,
     screenLessons,
+    screenCards,
   ]);
 
   app.append(topbar, content);
@@ -90,10 +128,12 @@ export function buildChrome(
   return {
     terminalHost,
     lessonsHost,
+    cardsHost,
     hamburgerBtn,
     setActiveView(view) {
       screenTerminal.hidden = view !== "terminal";
       screenLessons.hidden = view !== "lessons";
+      screenCards.hidden = view !== "cards";
     },
     setMode(meta) {
       modeName.textContent = meta.badge;

@@ -104,7 +104,10 @@ export class CheatSheet {
       shown += items.length;
 
       const sect = el("div", { class: "cheat-section", style: `--accent:${g.accent}` });
-      sect.append(el("div", { class: "cheat-section-title", text: g.title }));
+      const title = el("div", { class: "cheat-section-title" });
+      if (g.icon) title.append(iconEl(g.icon, "cheat-section-icon", 14));
+      title.append(el("span", { text: g.title }));
+      sect.append(title);
       const grid = el("div", { class: "cheat-rows" });
       for (const it of items) grid.append(this.row(it));
       sect.append(grid);

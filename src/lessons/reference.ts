@@ -38,6 +38,8 @@ export interface RefEntry {
 export interface RefGroup {
   title: string;
   accent: string;
+  /** SVG アイコン名 (ui/icons.ts)。 */
+  icon?: string;
   /** コマンド系か (検索の「コマンド数」カウント対象)。 */
   commands?: boolean;
   items: RefEntry[];
@@ -98,13 +100,14 @@ export const REFERENCE: RefGroup[] = [
   { title: "ページャ・全画面アプリ", accent: MAGENTA, commands: true, items: entries(pagerCommands) },
   { title: "diff・計算・ダンプ", accent: GREEN, commands: true, items: entries(extraCommands) },
   { title: "お楽しみ (ドヤ用)", accent: RED, commands: true, items: entries(funCommands) },
-  { title: "🥋 チャレンジ道場", accent: YELLOW, commands: true, items: entries([...challengeCommands, ...learnCommands]) },
+  { title: "チャレンジ道場", accent: YELLOW, icon: "award", commands: true, items: entries([...challengeCommands, ...learnCommands]) },
   { title: "対話モード起動", accent: RED, commands: true, items: entries(launcherCommands) },
 
   // ===== パイプレシピ (クリックでプロンプト挿入) =====
   {
-    title: "🔗 パイプ実践レシピ",
+    title: "パイプ実践レシピ",
     accent: CYAN,
+    icon: "link",
     items: [
       { cmd: "ls -la | grep '^d'", desc: "ディレクトリだけ表示" },
       { cmd: "ls -la | sort -k5 -nr | head -3", desc: "大きいファイル トップ3" },
@@ -121,8 +124,9 @@ export const REFERENCE: RefGroup[] = [
 
   // ===== キーバインド (クリック不可) =====
   {
-    title: "⌨ Ghostty (あなたの設定)",
+    title: "Ghostty (あなたの設定)",
     accent: YELLOW,
+    icon: "keyboard",
     items: [
       { cmd: "ctrl+h / j / k / l", desc: "ペイン移動 (左/下/上/右)", keys: true },
       { cmd: "ctrl+shift+v", desc: "右に分割", keys: true },
@@ -133,19 +137,22 @@ export const REFERENCE: RefGroup[] = [
     ],
   },
   {
-    title: "⌨ シェル (readline)",
+    title: "シェル (readline)",
     accent: GREEN,
+    icon: "keyboard",
     items: [
       { cmd: "Ctrl-A / Ctrl-E", desc: "行頭 / 行末", keys: true },
       { cmd: "Ctrl-K / Ctrl-U", desc: "カーソル以降 / 以前を削除", keys: true },
       { cmd: "Ctrl-W / Ctrl-Y", desc: "前の単語を削除 / 貼り付け", keys: true },
       { cmd: "↑ / ↓ / Ctrl-R", desc: "履歴 前 / 次 / 逆検索", keys: true },
+      { cmd: "Ctrl-T", desc: "fzf でファイルを選んで挿入 (fzf ウィジェット)", keys: true },
       { cmd: "Tab / Ctrl-L / Ctrl-C", desc: "補完 / 画面クリア / 中断", keys: true },
     ],
   },
   {
-    title: "⌨ tmux (prefix Ctrl-b)",
+    title: "tmux (prefix Ctrl-b)",
     accent: GREEN,
+    icon: "keyboard",
     items: [
       { cmd: "Ctrl-b c / n / p", desc: "新window / 次 / 前", keys: true },
       { cmd: 'Ctrl-b % / "', desc: "縦分割 / 横分割", keys: true },
@@ -155,8 +162,9 @@ export const REFERENCE: RefGroup[] = [
     ],
   },
   {
-    title: "⌨ Vim / Neovim",
+    title: "Vim / Neovim",
     accent: GREEN,
+    icon: "keyboard",
     items: [
       { cmd: "i a o O / Esc", desc: "挿入開始 / normal へ", keys: true },
       { cmd: "h j k l w b e", desc: "カーソル / 単語移動", keys: true },
@@ -168,8 +176,9 @@ export const REFERENCE: RefGroup[] = [
     ],
   },
   {
-    title: "⌨ Emacs (C-=Ctrl M-=Alt)",
+    title: "Emacs (C-=Ctrl M-=Alt)",
     accent: MAGENTA,
+    icon: "keyboard",
     items: [
       { cmd: "C-f C-b C-n C-p", desc: "前後の文字 / 上下の行", keys: true },
       { cmd: "C-a C-e / M-f M-b", desc: "行頭·行末 / 単語移動", keys: true },

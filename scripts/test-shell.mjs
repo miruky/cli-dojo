@@ -38,6 +38,12 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   page.on("pageerror", (e) => console.log("[pageerror]", e.message));
+  // ウェルカムツアーが E2E の入力を奪わないように既読フラグを先に入れる
+  await page.evaluateOnNewDocument(() => {
+    try {
+      localStorage.setItem("cli-dojo.tour.done", "1");
+    } catch {}
+  });
   await page.goto(URL, { waitUntil: "networkidle0", timeout: 30000 });
   await page.click(".terminal-host");
   await new Promise((r) => setTimeout(r, 150));

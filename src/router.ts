@@ -1,7 +1,7 @@
 import { Emitter } from "./util/emitter";
 
-/** 端末画面とレッスン画面の切替。 */
-export type ViewId = "terminal" | "lessons";
+/** 端末 / レッスン / カード問題集 の画面切替。 */
+export type ViewId = "terminal" | "lessons" | "cards";
 
 export class Router {
   private current: ViewId = "terminal";

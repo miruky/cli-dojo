@@ -93,6 +93,7 @@ export class Pane {
       history: this.opts.history,
       completer: (line, cursor) => this.shell.complete(line, cursor),
       onSubmit: (line) => this.onCommand(line),
+      onFileSearch: () => this.launchFzfInsert(),
     });
     this.terminal.setDataHandler((d) => this.editor.onData(d));
     this.terminal.banner();
@@ -137,6 +138,43 @@ export class Pane {
     if (this.mode === mode) return;
     this.mode = mode;
     this.opts.onModeChange?.(this, mode);
+  }
+
+  /** Ctrl-T: fzf でファイルを選び、入力途中の行へパスを挿入する (本家 fzf 準拠)。 */
+  private launchFzfInsert(): void {
+    if (this.currentApp || this.currentEditor) return;
+    const saved = this.editor.line;
+    const items: string[] = [];
+    const walk = (abs: string, rel: string, depth: number): void => {
+      if (depth > 12 || items.length > 5000) return;
+      const node = this.opts.vfs.stat(abs);
+      if (!node || !node.children) return;
+      for (const name of [...node.children.keys()].sort()) {
+        if (name === ".git") continue;
+        const child = node.children.get(name)!;
+        const r = rel ? `${rel}/${name}` : name;
+        if (child.type === "dir") walk(`${abs === "/" ? "" : abs}/${name}`, r, depth + 1);
+        else items.push(r);
+      }
+    };
+    walk(this.shell.env.cwd, "", 0);
+    const app = new FzfApp({
+      term: this.terminal,
+      items,
+      onDone: (picked) => {
+        this.currentEditor = null;
+        this.terminal.setDataHandler((d) => this.editor.onData(d));
+        this.terminal.fit();
+        this.editor.prompt();
+        const sep = saved && !saved.endsWith(" ") ? " " : "";
+        this.editor.fill(picked ? saved + sep + picked : saved);
+        this.terminal.focus();
+      },
+    });
+    this.currentEditor = app;
+    this.terminal.setDataHandler((d) => app.onData(d));
+    app.start();
+    this.terminal.focus();
   }
 
   /** 外部 (チートシート等) からプロンプト行へコマンドを挿入する。アプリ中は無視。 */
@@ -247,7 +285,7 @@ export class Pane {
           title: sel.title,
           onFinish:
             mode === "daily"
-              ? () => [`\x1b[38;2;255;198;0m🔥 デイリー修行 完走! 連続 ${recordDailyDone()} 日目\x1b[0m`]
+              ? () => [`\x1b[38;2;255;198;0m\uf06d デイリー修行 完走! 連続 ${recordDailyDone()} 日目\x1b[0m`]
               : undefined,
           onExit: () => this.exitEditor(),
         }),

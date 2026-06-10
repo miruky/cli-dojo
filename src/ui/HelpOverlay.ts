@@ -26,6 +26,7 @@ const SECTIONS: KeySection[] = [
       ["Ctrl-A / Ctrl-E", "行頭 / 行末"],
       ["Ctrl-K / Ctrl-U / Ctrl-W", "後/前/単語を削除"],
       ["↑ ↓ / Ctrl-R", "履歴 / 逆検索"],
+      ["Ctrl-T", "fzf でファイルを挿入"],
       ["Tab / Ctrl-L / Ctrl-C", "補完 / クリア / 中断"],
     ],
   },

@@ -669,3 +669,18 @@ export function beltFor(cleared: number): [string, string] {
   }
   return cur;
 }
+
+const BELT_CSS: Record<string, string> = {
+  "白帯": "#e6eaf5",
+  "黄帯": "#ffc600",
+  "緑帯": "#7ed67e",
+  "青帯": "#78aaff",
+  "茶帯": "#c88c50",
+  "黒帯 (師範)": "#f0f4ff",
+};
+
+/** UI (DOM) 用: 帯名と CSS 色。 */
+export function beltCssFor(cleared: number): [string, string] {
+  const [name] = beltFor(cleared);
+  return [name, BELT_CSS[name] ?? "#e6eaf5"];
+}

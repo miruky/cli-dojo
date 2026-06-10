@@ -22,6 +22,8 @@ export interface LineEditorOptions {
   header?: () => string;
   /** 入力行のシンタックスハイライト (可視文字は変えず ANSI のみ付与)。 */
   highlight?: (line: string) => string;
+  /** Ctrl-T: fzf ファイル検索ウィジェット (本家 fzf のキーバインド準拠)。 */
+  onFileSearch?: () => void;
 }
 
 interface Pos {
@@ -512,7 +514,9 @@ export class LineEditor {
         this.startSearch();
         break;
       case "transpose":
-        this.transpose();
+        // fzf 統合があれば本家 fzf と同じく Ctrl-T = ファイル検索ウィジェット
+        if (this.opts.onFileSearch) this.opts.onFileSearch();
+        else this.transpose();
         break;
       case "escape":
       case "ignore":

@@ -83,8 +83,8 @@ export class TerminalView {
     );
     t.writeln(
       "  " + dim("腕試しは ") + yellow("challenge") + dim(" (全50問で帯が上がる) / ") +
-        yellow("quiz") + dim(" (4択60問) / ") + yellow("daily") + dim(" (日課🔥) / ") +
-        yellow("stats") + dim("。"),
+        yellow("quiz") + dim(" (4択) / ") + yellow("cards") + dim(" (一問一答) / ") +
+        yellow("daily") + dim(" / ") + yellow("stats") + dim("。"),
     );
     t.writeln("  " + dim("左上の ☰ からモード切替 / レッスンへ。Tab 補完・↑↓履歴・Ctrl-R 検索対応。"));
     t.writeln("");

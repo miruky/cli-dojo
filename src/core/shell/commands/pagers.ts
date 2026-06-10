@@ -292,6 +292,24 @@ const MAN_PAGES: ManPage[] = [
     examples: [["rg TODO", "カレント以下から TODO を検索"], ["rg -i error logs/", "logs/ から error を検索"]],
   },
   {
+    name: "rsync", section: "1", oneline: "高速・多機能なファイル同期ツール",
+    synopsis: "rsync [OPTION]... SRC [DEST]",
+    description: [
+      "差分だけを転送してファイル/ディレクトリを同期する。バックアップの定番。",
+      "SRC の末尾スラッシュに注意: data/ は「中身」を、data は「ディレクトリごと」コピーする。",
+    ],
+    options: [
+      ["-a", "アーカイブモード (再帰 + 属性保持)"],
+      ["-v", "転送したファイルを表示"],
+      ["-n, --dry-run", "実際には転送せず動作を確認 (実機で重要)"],
+      ["--delete", "転送元に無いファイルを転送先から削除 (実機では要注意)"],
+    ],
+    examples: [
+      ["rsync -av data/ /tmp/mirror/", "data の中身をミラー"],
+      ["rsync -av data/ /tmp/mirror/", "2回目は差分なし → 何も送らない"],
+    ],
+  },
+  {
     name: "fzf", section: "1", oneline: "コマンドラインのファジーファインダ",
     synopsis: "command | fzf / fzf",
     description: ["候補リストをインタラクティブに曖昧検索して 1 件選ぶ。", "入力が無ければカレントディレクトリ以下のファイルが候補になる。"],
@@ -427,7 +445,7 @@ const sl: Command = {
   summary: "ls のタイプミスで蒸気機関車が走る",
   run(ctx) {
     if (!ctx.tty) {
-      ctx.out("sl: Steam Locomotive 🚂 (端末で実行してください)\n");
+      ctx.out("sl: Steam Locomotive (端末で実行してください)\n");
       return 0;
     }
     ctx.services.launch("sl", ctx.args.slice(1));

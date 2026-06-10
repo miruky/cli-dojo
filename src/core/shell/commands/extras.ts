@@ -1,4 +1,5 @@
 import type { Command, ExecContext } from "../types";
+import type { VNode } from "../../vfs/VFS";
 import { evalArith } from "../arith";
 import { unifiedDiff } from "./git";
 
@@ -488,6 +489,115 @@ const time: Command = {
   },
 };
 
+const rsync: Command = {
+  name: "rsync",
+  summary: "ファイル同期 (-av でディレクトリを再帰コピー)",
+  run(ctx) {
+    const args = ctx.args.slice(1);
+    const paths = args.filter((a) => !a.startsWith("-"));
+    if (paths.length < 2) {
+      ctx.err("rsync: 使い方: rsync -av <src> <dst>\n");
+      return 1;
+    }
+    const [srcSpec, dstSpec] = [paths[0], paths[paths.length - 1]];
+    if (srcSpec.includes(":") || dstSpec.includes(":")) {
+      ctx.out(`rsync: ${srcSpec.includes(":") ? srcSpec : dstSpec} へのリモート同期 (模擬): 接続しました\nsent 1,024 bytes  received 35 bytes  706.00 bytes/sec\n`);
+      return 0;
+    }
+    const srcAbs = ctx.resolve(srcSpec.replace(/\/+$/, ""));
+    const src = ctx.vfs.stat(srcAbs);
+    if (!src) {
+      ctx.err(`rsync: ${srcSpec}: そのようなファイルやディレクトリはありません\n`);
+      return 23;
+    }
+    // 末尾スラッシュ: src/ は「中身」を、src は「ディレクトリごと」コピー
+    const contentsOnly = /\/$/.test(srcSpec);
+    const dstAbs = ctx.resolve(dstSpec.replace(/\/+$/, ""));
+    const copied: string[] = [];
+    let bytes = 0;
+    const copyNode = (node: VNode, destPath: string, rel: string): void => {
+      if (node.type === "dir") {
+        ctx.vfs.mkdirp(destPath);
+        if (rel) copied.push(rel + "/");
+        for (const [name, child] of node.children ?? []) {
+          copyNode(child, `${destPath}/${name}`, rel ? `${rel}/${name}` : name);
+        }
+      } else if (node.type === "file") {
+        const existing = ctx.vfs.stat(destPath);
+        if (existing && existing.type === "file") {
+          if (existing.content === node.content) return; // 差分なしはスキップ (rsync らしさ)
+          existing.content = node.content;
+          existing.mtime = new Date();
+        } else {
+          ctx.vfs.mkdirp(destPath.slice(0, destPath.lastIndexOf("/")) || "/");
+          ctx.vfs.createFile(destPath, node.content, node.mode);
+        }
+        copied.push(rel);
+        bytes += node.content.length;
+      }
+    };
+    if (src.type === "dir" && !contentsOnly) {
+      copyNode(src, `${dstAbs}/${src.name}`, src.name);
+    } else if (src.type === "dir") {
+      copyNode(src, dstAbs, "");
+    } else {
+      const dstNode = ctx.vfs.stat(dstAbs);
+      const target = dstNode?.type === "dir" ? `${dstAbs}/${src.name}` : dstAbs;
+      copyNode(src, target, src.name);
+    }
+    const verbose = args.some((a) => /^-\w*v/.test(a));
+    if (verbose) {
+      ctx.out("sending incremental file list\n");
+      for (const c of copied) ctx.out(c + "\n");
+      ctx.out(`\nsent ${bytes.toLocaleString()} bytes  received ${copied.length * 18} bytes\ntotal size is ${bytes.toLocaleString()}  speedup is 1.00\n`);
+    }
+    return 0;
+  },
+};
+
+const mktemp: Command = {
+  name: "mktemp",
+  summary: "一時ファイル/ディレクトリを作成 (-d)",
+  run(ctx) {
+    const isDir = ctx.args.includes("-d");
+    const rand = Array.from({ length: 10 }, () => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 62)]).join("");
+    const path = `/tmp/tmp.${rand}`;
+    if (isDir) ctx.vfs.mkdirp(path);
+    else ctx.vfs.createFile(path, "", 0o600);
+    ctx.out(path + "\n");
+    return 0;
+  },
+};
+
+function lineEndingCmd(name: string, summary: string, toUnix: boolean): Command {
+  return {
+    name,
+    summary,
+    run(ctx) {
+      const files = ctx.args.slice(1).filter((a) => !a.startsWith("-"));
+      if (files.length === 0) {
+        const s = toUnix ? ctx.stdin.replace(/\r\n/g, "\n") : ctx.stdin.replace(/\r?\n/g, "\r\n");
+        ctx.out(s);
+        return 0;
+      }
+      for (const f of files) {
+        const node = ctx.vfs.stat(ctx.resolve(f));
+        if (!node || node.type !== "file") {
+          ctx.err(`${name}: ${f}: そのようなファイルはありません\n`);
+          return 1;
+        }
+        node.content = toUnix ? node.content.replace(/\r\n/g, "\n") : node.content.replace(/\r?\n/g, "\r\n");
+        node.mtime = new Date();
+        ctx.out(`${name}: converting file ${f} to ${toUnix ? "Unix" : "DOS"} format...\n`);
+      }
+      return 0;
+    },
+  };
+}
+
 export const extraCommands: Command[] = [
   diff, cmp, bc, expr, cal, shuf, yes, xxd, hexdump, od, strings, split, fmt, whatis, apropos, factor, time,
+  rsync, mktemp,
+  lineEndingCmd("dos2unix", "改行コードを CRLF → LF に変換", true),
+  lineEndingCmd("unix2dos", "改行コードを LF → CRLF に変換", false),
 ];

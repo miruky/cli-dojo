@@ -5,6 +5,7 @@ import { Executor, type ExecIO } from "./Executor";
 import { allCommands, buildRegistry } from "./commands";
 import { ensureSeedRepos } from "./commands/git";
 import { recordUsage } from "./usage";
+import { loadAliases } from "./aliasStore";
 import type { Command, ExecContext, LaunchPayload, ShellServices } from "./types";
 import type { History } from "../terminal/History";
 import type { CompletionResult } from "../terminal/LineEditor";
@@ -40,7 +41,8 @@ export class Shell {
   readonly vfs: VFS;
   readonly env = new Environment();
   private registry: Map<string, Command> = buildRegistry();
-  private aliases = new Map<string, string>(DEFAULT_ALIASES);
+  /** 保存済みエイリアスがあれば復元、なければデフォルト。 */
+  private aliases = loadAliases() ?? new Map<string, string>(DEFAULT_ALIASES);
   private executor: Executor;
   private writeFn: (s: string) => void;
   private colsFn: () => number;

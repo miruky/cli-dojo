@@ -116,7 +116,7 @@ const daily: Command = {
     }
     const { streak, doneToday } = loadStreak();
     if (doneToday) {
-      ctx.out(`\x1b[38;2;255;198;0m🔥 今日の修行は完了済みです (連続 ${streak} 日)。\x1b[0m もう一周は自由稽古としてどうぞ。\n`);
+      ctx.out(`\x1b[38;2;255;198;0m\uf06d 今日の修行は完了済みです (連続 ${streak} 日)。\x1b[0m もう一周は自由稽古としてどうぞ。\n`);
     }
     ctx.services.launch("quiz", [], { mode: "daily" });
     return 0;
@@ -163,12 +163,12 @@ const stats: Command = {
       /* なし */
     }
 
-    ctx.out(`\n  ${B}📊 あなたの修行統計${R}\n\n`);
+    ctx.out(`\n  ${B}\uf080 あなたの修行統計${R}\n\n`);
     // サマリ
     ctx.out(`  段位:         ${beltColor}${B}${belt}${R}  (チャレンジ ${cleared.size}/${CHALLENGES.length})\n`);
     ctx.out(`  クイズベスト: ${B}${best}%${R}${wrong.size ? `  ${DIM}(復習待ち ${wrong.size}問 → quiz review)${R}` : ""}\n`);
     ctx.out(
-      `  デイリー修行: ${streak > 0 ? YELLOW + "🔥 連続 " + streak + " 日" + R : DIM + "未挑戦 (daily で開始)" + R}` +
+      `  デイリー修行: ${streak > 0 ? YELLOW + "\uf06d 連続 " + streak + " 日" + R : DIM + "未挑戦 (daily で開始)" + R}` +
         `${doneToday ? `  ${GREEN}今日は完了済${R}` : streak > 0 ? `  ${DIM}今日はまだ → daily${R}` : ""}\n`,
     );
     ctx.out(`  実行コマンド: ${B}${usage.total}${R} 回  ${DIM}(ユニーク ${Object.keys(usage.counts).length} 種類)${R}\n`);
@@ -192,4 +192,30 @@ const stats: Command = {
   },
 };
 
-export const learnCommands: Command[] = [quiz, daily, vimtutor, stats];
+const cards: Command = {
+  name: "cards",
+  summary: "カード一問一答を開く (全コマンド対象のフラッシュカード)",
+  run(ctx) {
+    if (!ctx.tty) {
+      ctx.err("cards: 端末でないと起動できません\n");
+      return 1;
+    }
+    window.dispatchEvent(new CustomEvent("cli-dojo:open-cards"));
+    return 0;
+  },
+};
+
+const tour: Command = {
+  name: "tour",
+  summary: "サイトの使い方ツアーをもう一度見る",
+  run(ctx) {
+    if (!ctx.tty) {
+      ctx.err("tour: 端末でないと起動できません\n");
+      return 1;
+    }
+    window.dispatchEvent(new CustomEvent("cli-dojo:open-tour"));
+    return 0;
+  },
+};
+
+export const learnCommands: Command[] = [quiz, daily, vimtutor, stats, tour, cards];

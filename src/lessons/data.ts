@@ -642,7 +642,8 @@ export const LESSONS: Lesson[] = [
           { cmd: "quiz", desc: "LPIC風4択クイズ ランダム10問 (1〜4キーで回答・解説付き)" },
           { cmd: "quiz 20", desc: "出題数を増やす (プールは60問)" },
           { cmd: "quiz review", desc: "間違えた問題だけ復習 (正解すると卒業)" },
-          { cmd: "daily", desc: "デイリー修行: 日替わり5問。完走で連続日数 🔥 が伸びる" },
+          { cmd: "cards", desc: "カード一問一答: 全コマンドをフラッシュカードで暗記" },
+          { cmd: "daily", desc: "デイリー修行: 日替わり5問。完走で連続日数が伸びる" },
           { cmd: "stats", desc: "修行統計: 使用コマンドTOP10 / 段位 / ベスト / 連続日数" },
           { cmd: "vimtutor", desc: "vim チュートリアル (実際に手を動かして学ぶ)" },
         ],
@@ -708,6 +709,128 @@ export const LESSONS: Lesson[] = [
           { cmd: "ls | tee /tmp/files.txt | wc -l", desc: "tee で保存しつつ次へ渡す" },
           { cmd: "cat data/users.csv | cut -d, -f2 | tr 'a-z' 'A-Z'", desc: "2列目を大文字に変換" },
           { cmd: "time grep -r TODO .", desc: "実行時間を計測" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "incident",
+    icon: "server",
+    group: "Linux",
+    title: "実戦: 不審なアクセスを調査せよ",
+    accent: CYAN,
+    intro: "シナリオ演習。サーバに攻撃の兆候がある — ログを追って攻撃者を特定し、対処までやり切る。上から順に実行してみよう。",
+    sections: [
+      {
+        title: "Step 1: 異変に気づく",
+        items: [
+          { cmd: "tail -5 /var/log/auth.log", desc: "まず認証ログの直近を見る" },
+          { cmd: "grep -c 'Failed password' /var/log/auth.log", desc: "ログイン失敗は何回起きている?" },
+          { cmd: "grep 'Failed password' /var/log/auth.log | head -5", desc: "失敗の中身を確認 (どんなユーザ名を試している?)" },
+        ],
+      },
+      {
+        title: "Step 2: 攻撃者を特定する",
+        items: [
+          { cmd: "grep 'Failed password' /var/log/auth.log | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' | sort | uniq -c | sort -nr", desc: "失敗元 IP を集計 → 最多が容疑者" },
+          { cmd: "grep 'invalid user' /var/log/auth.log | awk '{print $11}' | sort | uniq -c | sort -nr", desc: "試されたユーザ名の一覧 (admin/root/oracle…は辞書攻撃の典型)" },
+          { cmd: "grep 203.0.113.7 data/access.log", desc: "同じ IP は Web にも来ている? (/login への連続 POST)" },
+          { cmd: "grep 203.0.113.7 /var/log/auth.log | wc -l", desc: "この IP の総攻撃回数" },
+        ],
+      },
+      {
+        title: "Step 3: 被害がないか確かめる",
+        items: [
+          { cmd: "grep Accepted /var/log/auth.log", desc: "成功したログインは正規のものだけか? (IP を確認)" },
+          { cmd: "grep sudo /var/log/auth.log", desc: "sudo の実行履歴に不審なコマンドがないか" },
+          { cmd: "last", desc: "ログイン履歴を確認" },
+          { cmd: "who", desc: "今ログインしているのは誰?" },
+        ],
+      },
+      {
+        title: "Step 4: 対処と報告",
+        items: [
+          { cmd: "echo 'DROP 203.0.113.7' >> ~/firewall-rules.txt", desc: "遮断リストに追加 (実務なら iptables/fail2ban)" },
+          { cmd: "grep 'Failed password' /var/log/auth.log | grep -c 203.0.113.7", desc: "報告用: 攻撃回数を数える" },
+          { cmd: "echo \"203.0.113.7 から $(grep -c 203.0.113.7 /var/log/auth.log) 件の攻撃を確認\" > ~/incident-report.txt", desc: "コマンド置換で報告書を生成" },
+          { cmd: "cat ~/incident-report.txt", desc: "報告書を確認して完了" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "backup",
+    icon: "box",
+    group: "Linux",
+    title: "アーカイブ & バックアップ",
+    accent: YELLOW,
+    intro: "tar/gzip/zip/rsync/ハッシュ検証。壊れない・失わないための定石。",
+    sections: [
+      {
+        title: "tar (定番3点セット)",
+        items: [
+          { cmd: "tar czvf backup.tar.gz data", desc: "作成 (c=create z=gzip v=verbose f=file)" },
+          { cmd: "tar tzvf backup.tar.gz", desc: "展開せず中身を確認 (t=list) — 事故防止の基本" },
+          { cmd: "mkdir -p restore && tar xzvf backup.tar.gz -C restore", desc: "展開 (x=extract, -C で展開先指定)" },
+          { cmd: "ls restore/data", desc: "復元できたか確認" },
+        ],
+      },
+      {
+        title: "圧縮いろいろ",
+        items: [
+          { cmd: "cp data/access.log /tmp/big.log && gzip /tmp/big.log && ls -l /tmp", desc: "gzip 圧縮 (.gz になる)" },
+          { cmd: "gunzip /tmp/big.log.gz && ls -l /tmp", desc: "解凍して元に戻す" },
+          { cmd: "zip -r docs.zip docs && unzip -l docs.zip", desc: "zip で固めて一覧" },
+          { cmd: "split -l 10 data/access.log part- && ls part-*", desc: "大きいファイルを分割" },
+        ],
+      },
+      {
+        title: "同期と検証",
+        items: [
+          { cmd: "rsync -av data/ /tmp/mirror/", desc: "rsync でミラー (2回目は差分なしでスキップ)" },
+          { cmd: "rsync -av data/ /tmp/mirror/", desc: "もう一度 → 転送されない (差分同期)" },
+          { cmd: "sha256sum backup.tar.gz", desc: "ハッシュで改竄/破損チェック" },
+          { cmd: "sha256sum data/*.csv > checksums.txt && cat checksums.txt", desc: "チェックサム一覧を保存" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "envconf",
+    icon: "file-text",
+    group: "Linux",
+    title: "環境変数とカスタマイズ",
+    accent: GREEN,
+    intro: "PATH・export・alias・設定ファイル。自分のシェルを育てる。",
+    sections: [
+      {
+        title: "環境変数",
+        items: [
+          { cmd: "echo $HOME $USER $SHELL", desc: "代表的な変数を見る" },
+          { cmd: "env | head -10", desc: "環境変数の一覧" },
+          { cmd: "export EDITOR=vim && echo $EDITOR", desc: "変数を設定して確認" },
+          { cmd: "echo $PATH | tr ':' '\\n'", desc: "PATH を1行ずつ表示 (コマンド探索の順番)" },
+          { cmd: "MY_VAR=hello bash -c 'echo $MY_VAR'", desc: "1コマンドだけに変数を渡す" },
+        ],
+      },
+      {
+        title: "エイリアス (このサイトでは保存されます)",
+        items: [
+          { cmd: "alias", desc: "現在のエイリアス一覧 (ll や la は最初から定義済み)" },
+          { cmd: "alias gs='git status'", desc: "短縮形を作る → 次回訪問時も残る" },
+          { cmd: "gs", desc: "早速使ってみる" },
+          { cmd: "type gs", desc: "正体を確認 (alias だと分かる)" },
+          { cmd: "unalias gs", desc: "消す" },
+        ],
+      },
+      {
+        title: "設定ファイルを読む",
+        items: [
+          { cmd: "cat ~/.bashrc", desc: "対話シェルの設定 (alias や PS1 はここ)" },
+          { cmd: "cat ~/.profile", desc: "ログイン時に読まれる設定" },
+          { cmd: "cat ~/.vimrc", desc: "vim の設定" },
+          { cmd: "cat ~/.gitconfig", desc: "git の設定 (user.name など)" },
+          { cmd: "bat ~/.bashrc", desc: "bat ならハイライト付きで読める" },
         ],
       },
     ],

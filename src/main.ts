@@ -7,6 +7,8 @@ import "./styles/tmux.css";
 import "./styles/lessons.css";
 import "./styles/help.css";
 import "./styles/cheat.css";
+import "./styles/tour.css";
+import "./styles/cards.css";
 import { App } from "./app/App";
 
 const appEl = document.getElementById("app");
