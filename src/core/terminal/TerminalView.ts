@@ -78,8 +78,8 @@ export class TerminalView {
     t.writeln("");
     t.writeln("  " + dim("本物のシェルが動きます。まずは試してみましょう:"));
     t.writeln(
-      "    " + yellow("ls -la") + dim("   ") + yellow("cat README.txt") + dim("   ") +
-        yellow("cd projects") + dim("   ") + yellow("help"),
+      "    " + yellow("neofetch") + dim("   ") + yellow("ls -la") + dim("   ") +
+        yellow("git status") + dim("   ") + yellow("htop") + dim("   ") + yellow("man ls") + dim("   ") + yellow("help"),
     );
     t.writeln("  " + dim("左上の ☰ からモード切替 / レッスンへ。Tab 補完・↑↓履歴・Ctrl-R 検索対応。"));
     t.writeln("");

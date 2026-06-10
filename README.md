@@ -29,15 +29,22 @@ npm run preview  # ビルド結果のプレビュー
 
 ## 実装済み機能
 
-- **本物のシェル**: 仮想FS上で 80+ コマンド (ls/grep/sed/awk/find/tar/chmod/systemctl…)、
+- **本物のシェル**: 仮想FS上で 200+ コマンド (ls/grep/sed/awk/find/tar/chmod/systemctl…)、
   パイプ・リダイレクト・`&&`/`||`・glob・ブレース・コマンド置換・`$(())` 算術。
+- **Git (本当に動く)**: init/status/add/commit/log/diff/show/branch/checkout が VFS 上で動作。
+  ブランチ切替で作業ツリーも書き換わる。
+- **全画面 TUI アプリ**: `man`/`less` (検索付きページャ)、`htop` (リアルタイム更新)、
+  `watch`、`fzf` (ファジーファインダ)、`cmatrix`、`sl`。
+- **モダン CLI ツール**: eza (アイコン付き ls)・bat (ハイライト cat)・fd・rg (ripgrep)・
+  jq・tldr・dust・duf・procs・z (zoxide)。
+- **お楽しみ**: neofetch・figlet・lolcat・cowsay・fortune — `fortune | cowsay | lolcat` まで動く。
 - **シェルスクリプト**: if/for/while/until/case/関数/`[ ]`/`[[ ]]`/`$1..$@`/`source`/`./x.sh`。
-- **テキスト処理/正規表現**: grep(BRE/ERE/POSIX)、sed(hold/分岐)、awk(処理系)。
+- **テキスト処理/正規表現**: grep(BRE/ERE/POSIX)、sed(hold/分岐)、awk(処理系)、diff(-u)。
 - **LPIC-3 の幅**: 権限・プロセス・ネットワーク・パッケージ・systemd・openssl・暗号ハッシュ。
 - **ペイン (Ghostty 準拠)**: ctrl+h/j/k/l 移動, ctrl+shift+v/h 分割, ctrl+x 閉じる, リサイズ。
 - **tmux モード**: prefix Ctrl-b でウィンドウ/ペイン多重化、ステータスバー。
 - **Neovim モード**: モーダル編集・モーション・オペレータ・Ex・検索・相対行番号。
-- **Emacs モード**: C-x プレフィックス・kill ring・mark/region・isearch・ミニバッファ。
+- **Emacs モード**: C-x プレフィックス・kill ring・mark/region・isearch・dired・tab-line。
 - **レッスン/チートシート**: 検索可能なリファレンス + 「Try」で端末へ送信。
 - **キーバインド早見表**: 右上の `?` から全モードのキー一覧。
 

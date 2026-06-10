@@ -3,7 +3,8 @@ import { buildInitialFS } from "../vfs/seed";
 import { Environment } from "./Environment";
 import { Executor, type ExecIO } from "./Executor";
 import { allCommands, buildRegistry } from "./commands";
-import type { Command, ExecContext, ShellServices } from "./types";
+import { ensureSeedRepos } from "./commands/git";
+import type { Command, ExecContext, LaunchPayload, ShellServices } from "./types";
 import type { History } from "../terminal/History";
 import type { CompletionResult } from "../terminal/LineEditor";
 
@@ -20,8 +21,8 @@ export interface ShellOptions {
   history: History;
   /** 複数ペインで共有する VFS。省略時は新規作成。 */
   vfs?: VFS;
-  /** 対話アプリ起動要求 (tmux/vim/emacs ...) */
-  onLaunch?: (name: string, args: string[]) => void;
+  /** 対話アプリ起動要求 (tmux/vim/emacs/less/htop ...) */
+  onLaunch?: (name: string, args: string[], payload?: LaunchPayload) => void;
 }
 
 const DEFAULT_ALIASES: Array<[string, string]> = [
@@ -46,6 +47,7 @@ export class Shell {
 
   constructor(opts: ShellOptions) {
     this.vfs = opts.vfs ?? buildInitialFS();
+    ensureSeedRepos(this.vfs);
     this.writeFn = opts.write;
     this.colsFn = opts.cols;
     this.history = opts.history;
@@ -55,7 +57,7 @@ export class Shell {
       listCommands: () => allCommands.map((c) => ({ name: c.name, summary: c.summary })),
       cols: () => this.colsFn(),
       aliases: () => this.aliases,
-      launch: (name, args) => opts.onLaunch?.(name, args),
+      launch: (name, args, payload) => opts.onLaunch?.(name, args, payload),
       runArgv: (argv, stdin) => {
         const impl = this.registry.get(argv[0]);
         if (!impl) return { stdout: "", stderr: `${argv[0]}: command not found\n`, code: 127 };
@@ -97,6 +99,21 @@ export class Shell {
         this.writeFn("\x1b[38;2;255;98;140m" + s.replace(/\n/g, "\r\n") + "\x1b[0m"),
     };
     return this.executor.run(line, io);
+  }
+
+  /** コマンド行を実行し、出力を端末へ流さず文字列で返す (watch 等の再実行用)。 */
+  capture(line: string): { output: string; code: number } {
+    let output = "";
+    const io: ExecIO = {
+      print: (s) => {
+        output += s;
+      },
+      printErr: (s) => {
+        output += s;
+      },
+    };
+    const code = this.executor.run(line, io);
+    return { output, code };
   }
 
   /** 2行目のプロンプト記号 (直前コマンドの成否で色が変わる)。 */

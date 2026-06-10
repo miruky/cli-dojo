@@ -21,6 +21,11 @@ import { simCommands } from "../core/shell/commands/sims";
 import { containerCommands } from "../core/shell/commands/containers";
 import { scriptingCommands } from "../core/shell/commands/scripting";
 import { launcherCommands } from "../core/shell/commands/launchers";
+import { pagerCommands } from "../core/shell/commands/pagers";
+import { modernCommands } from "../core/shell/commands/modern";
+import { gitCommands } from "../core/shell/commands/git";
+import { funCommands } from "../core/shell/commands/fun";
+import { extraCommands } from "../core/shell/commands/extras";
 
 export interface RefEntry {
   cmd: string;
@@ -86,6 +91,11 @@ export const REFERENCE: RefGroup[] = [
   { title: "コンテナ・オーケストレーション (模擬)", accent: GREEN, commands: true, items: entries(containerCommands.filter((c) => ["docker", "podman", "nerdctl", "podman-compose", "kubectl"].includes(c.name))) },
   { title: "仮想化・名前空間 (模擬)", accent: GREEN, commands: true, items: entries(containerCommands.filter((c) => !["docker", "podman", "nerdctl", "podman-compose", "kubectl"].includes(c.name))) },
   { title: "シェルスクリプト (制御構文)", accent: YELLOW, commands: true, items: entries(scriptingCommands) },
+  { title: "Git (本当に動く)", accent: YELLOW, commands: true, items: entries(gitCommands) },
+  { title: "モダン CLI ツール", accent: CYAN, commands: true, items: entries(modernCommands) },
+  { title: "ページャ・全画面アプリ", accent: MAGENTA, commands: true, items: entries(pagerCommands) },
+  { title: "diff・計算・ダンプ", accent: GREEN, commands: true, items: entries(extraCommands) },
+  { title: "お楽しみ (ドヤ用)", accent: RED, commands: true, items: entries(funCommands) },
   { title: "対話モード起動", accent: RED, commands: true, items: entries(launcherCommands) },
 
   // ===== キーバインド (クリック不可) =====

@@ -14,8 +14,22 @@ export interface ShellServices {
   aliases(): Map<string, string>;
   /** 単一コマンドを argv 指定で実行し出力を捕捉 (find -exec / xargs 用)。 */
   runArgv(argv: string[], stdin: string): { stdout: string; stderr: string; code: number };
-  /** 対話アプリ(tmux/vim/emacs 等)の起動を要求 (ペインがモードに切替える)。 */
-  launch(name: string, args: string[]): void;
+  /** 対話アプリ(tmux/vim/emacs/less/htop 等)の起動を要求 (ペインがモードに切替える)。 */
+  launch(name: string, args: string[], payload?: LaunchPayload): void;
+}
+
+/** 対話アプリへ引き渡す追加データ (less へのパイプ入力、man のページ本文など)。 */
+export interface LaunchPayload {
+  /** 表示するテキスト (less/man)。ANSI 色を含んでよい。 */
+  text?: string;
+  /** ステータスバー等に出すタイトル。 */
+  title?: string;
+  /** 候補リスト (fzf)。 */
+  items?: string[];
+  /** 繰り返し実行するコマンド行 (watch)。 */
+  line?: string;
+  /** 更新間隔 (秒, watch)。 */
+  interval?: number;
 }
 
 export interface ExecContext {

@@ -7,6 +7,13 @@ import type { VFS } from "../vfs/VFS";
 import { TmuxSession } from "../modes/tmux/TmuxSession";
 import { VimEditor } from "../modes/vim/VimEditor";
 import { EmacsEditor } from "../modes/emacs/EmacsEditor";
+import { PagerApp } from "../apps/Pager";
+import { HtopApp } from "../apps/Htop";
+import { MatrixApp } from "../apps/Matrix";
+import { TrainApp } from "../apps/Train";
+import { FzfApp } from "../apps/Fzf";
+import { WatchApp } from "../apps/Watch";
+import type { LaunchPayload } from "../shell/types";
 import type { ModeId } from "../modes/types";
 
 let nextId = 1;
@@ -51,7 +58,7 @@ export class Pane {
   private host: HTMLElement;
   private opts: PaneOptions;
   private mounted = false;
-  private pendingApp: { name: string; args: string[] } | null = null;
+  private pendingApp: { name: string; args: string[]; payload?: LaunchPayload } | null = null;
   private currentApp: AppInstance | null = null;
   private currentEditor: EditorApp | null = null;
   private mode: ModeId | null = null;
@@ -73,8 +80,8 @@ export class Pane {
       cols: () => this.terminal.cols,
       history: this.opts.history,
       vfs: this.opts.vfs,
-      onLaunch: (name, args) => {
-        this.pendingApp = { name, args };
+      onLaunch: (name, args, payload) => {
+        this.pendingApp = { name, args, payload };
       },
     });
     this.editor = new LineEditor(this.terminal.term, {
@@ -95,7 +102,7 @@ export class Pane {
     const a = this.pendingApp;
     this.pendingApp = null;
     if (a) {
-      if (this.launch(a.name, a.args)) return;
+      if (this.launch(a.name, a.args, a.payload)) return;
       this.editor.systemNotice(`${a.name}: このモードは順次実装します (現状: tmux が利用可能)。`);
       return;
     }
@@ -137,13 +144,22 @@ export class Pane {
     this.terminal.focus();
   }
 
-  private launch(name: string, args: string[]): boolean {
-    const ok = this.launchInner(name, args);
+  private launch(name: string, args: string[], payload?: LaunchPayload): boolean {
+    const ok = this.launchInner(name, args, payload);
     if (ok) this.setMode(modeOf(name));
     return ok;
   }
 
-  private launchInner(name: string, args: string[]): boolean {
+  /** 端末を占有する全画面アプリ (less/htop/cmatrix/sl/fzf/watch) を currentEditor としてホストする。 */
+  private launchTermApp(app: EditorApp & { start(): void }): boolean {
+    this.currentEditor = app;
+    this.terminal.setDataHandler((d) => app.onData(d));
+    app.start();
+    this.terminal.focus();
+    return true;
+  }
+
+  private launchInner(name: string, args: string[], payload?: LaunchPayload): boolean {
     if (name === "tmux") {
       const session = new TmuxSession({
         history: this.opts.history,
@@ -187,6 +203,48 @@ export class Pane {
       this.terminal.focus();
       return true;
     }
+    if (name === "less") {
+      return this.launchTermApp(
+        new PagerApp({
+          term: this.terminal,
+          text: payload?.text ?? "",
+          title: payload?.title ?? "less",
+          onExit: () => this.exitEditor(),
+        }),
+      );
+    }
+    if (name === "htop") {
+      return this.launchTermApp(new HtopApp({ term: this.terminal, onExit: () => this.exitEditor() }));
+    }
+    if (name === "cmatrix") {
+      return this.launchTermApp(new MatrixApp({ term: this.terminal, onExit: () => this.exitEditor() }));
+    }
+    if (name === "sl") {
+      return this.launchTermApp(new TrainApp({ term: this.terminal, onExit: () => this.exitEditor() }));
+    }
+    if (name === "fzf") {
+      return this.launchTermApp(
+        new FzfApp({
+          term: this.terminal,
+          items: payload?.items ?? [],
+          onDone: (picked) => {
+            if (picked != null) this.terminal.term.write(picked.replace(/\n/g, "\r\n") + "\r\n");
+            this.exitEditor();
+          },
+        }),
+      );
+    }
+    if (name === "watch") {
+      return this.launchTermApp(
+        new WatchApp({
+          term: this.terminal,
+          line: payload?.line ?? "",
+          interval: payload?.interval ?? 2,
+          runLine: (line) => this.shell.capture(line),
+          onExit: () => this.exitEditor(),
+        }),
+      );
+    }
     return false;
   }
 
@@ -223,7 +281,7 @@ export class Pane {
     const a = this.pendingApp;
     this.pendingApp = null;
     if (a) {
-      if (this.launch(a.name, a.args)) return;
+      if (this.launch(a.name, a.args, a.payload)) return;
       this.editor.systemNotice(`${a.name}: このモードは順次実装します (現状: tmux が利用可能)。`);
       return;
     }

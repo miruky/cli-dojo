@@ -601,4 +601,165 @@ export const LESSONS: Lesson[] = [
       },
     ],
   },
+  {
+    id: "git",
+    icon: "branch",
+    group: "Linux",
+    title: "Git 入門 (本当に動く)",
+    accent: YELLOW,
+    intro: "VFS 上で本物の git ワークフローを体験。init → add → commit → branch まで。",
+    sections: [
+      {
+        title: "最初のコミット",
+        items: [
+          { cmd: "mkdir repo && cd repo && git init", desc: "リポジトリを作る" },
+          { cmd: "echo 'hello' > hello.txt", desc: "ファイルを作る" },
+          { cmd: "git status", desc: "状態を確認 (untracked が見える)" },
+          { cmd: "git add hello.txt", desc: "ステージする" },
+          { cmd: "git commit -m 'first commit'", desc: "コミットする" },
+          { cmd: "git log --oneline", desc: "履歴を確認" },
+        ],
+      },
+      {
+        title: "変更と差分",
+        items: [
+          { cmd: "echo 'world' >> hello.txt", desc: "ファイルを変更" },
+          { cmd: "git diff", desc: "作業ツリーの差分 (色付き unified)" },
+          { cmd: "git add . && git diff --staged", desc: "ステージ済みの差分" },
+          { cmd: "git commit -m 'add world'", desc: "2回目のコミット" },
+          { cmd: "git show", desc: "最新コミットの中身" },
+          { cmd: "git log --oneline --graph", desc: "履歴をグラフ付きで" },
+        ],
+      },
+      {
+        title: "ブランチ",
+        items: [
+          { cmd: "git branch", desc: "ブランチ一覧" },
+          { cmd: "git checkout -b feature", desc: "ブランチを作って切替" },
+          { cmd: "echo 'feat' > feat.txt && git add . && git commit -m 'feat'", desc: "ブランチ上でコミット" },
+          { cmd: "git checkout main && ls", desc: "main に戻ると feat.txt が消える!" },
+          { cmd: "git checkout feature && ls", desc: "feature に戻ると現れる" },
+          { cmd: "git push", desc: "push (模擬)" },
+        ],
+      },
+      {
+        title: "既存リポジトリで試す",
+        items: [
+          { cmd: "cd ~/projects && git status", desc: "projects は最初から git リポジトリ" },
+          { cmd: "cd ~/projects && git log --oneline", desc: "取り込まれた初期コミット" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "modern",
+    icon: "cpu",
+    group: "Linux",
+    title: "モダン CLI ツール",
+    accent: CYAN,
+    intro: "Rust 製の新世代ツールたち。ls/cat/find/grep の上位互換を体験。",
+    sections: [
+      {
+        title: "見た目が良い ls / cat",
+        items: [
+          { cmd: "eza -l", desc: "アイコン+色付きの ls (exa/lsd も同じ)" },
+          { cmd: "eza --tree", desc: "ツリー表示" },
+          { cmd: "bat projects/hello.sh", desc: "シンタックスハイライト付き cat" },
+          { cmd: "bat notes.md", desc: "Markdown もきれいに" },
+        ],
+      },
+      {
+        title: "検索の新定番 (fd / rg / fzf)",
+        items: [
+          { cmd: "fd txt", desc: "find の代替 (名前で再帰検索)" },
+          { cmd: "fd -e csv", desc: "拡張子で絞る" },
+          { cmd: "rg TODO", desc: "ripgrep: ファイル別・色付きで再帰 grep" },
+          { cmd: "rg -i error logs/", desc: "大文字小文字無視" },
+          { cmd: "fzf", desc: "ファジーファインダ (タイプして Enter)" },
+          { cmd: "history | fzf", desc: "コマンド履歴から曖昧検索" },
+        ],
+      },
+      {
+        title: "JSON と システム",
+        items: [
+          { cmd: "cat data/users.json | jq .", desc: "JSON を色付き整形" },
+          { cmd: "jq '.[] | .name' data/users.json", desc: "フィールド抽出" },
+          { cmd: "jq '.[0].email' data/users.json", desc: "先頭要素の email" },
+          { cmd: "dust", desc: "du の見やすい版 (バー付き)" },
+          { cmd: "duf", desc: "df の見やすい版 (罫線テーブル)" },
+          { cmd: "procs", desc: "ps の見やすい版" },
+          { cmd: "z projects", desc: "zoxide: 部分一致で cd" },
+          { cmd: "tldr tar", desc: "man より速い要点ヘルプ" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "pager",
+    icon: "book",
+    group: "Linux",
+    title: "man・ページャ・監視",
+    accent: BLUE,
+    intro: "長い出力を読む技術。man / less / watch / htop は実務の毎日。",
+    sections: [
+      {
+        title: "マニュアル",
+        items: [
+          { cmd: "man ls", desc: "マニュアルページ (q で終了, / で検索)" },
+          { cmd: "man grep", desc: "オプションと例が充実" },
+          { cmd: "man -k file", desc: "キーワードからコマンドを探す" },
+          { cmd: "whatis tar", desc: "一行説明だけ見る" },
+          { cmd: "apropos network", desc: "説明文から検索" },
+        ],
+      },
+      {
+        title: "ページャ (less)",
+        items: [
+          { cmd: "less /var/log/syslog", desc: "ファイルをページ送りで読む" },
+          { cmd: "ls -la /etc | less", desc: "長い出力をパイプで読む" },
+          { cmd: "Space / b", desc: "1画面進む / 戻る", keys: true },
+          { cmd: "/pattern → n / N", desc: "検索 → 次 / 前へ", keys: true },
+          { cmd: "g / G / q", desc: "先頭 / 末尾 / 終了", keys: true },
+        ],
+      },
+      {
+        title: "リアルタイム監視",
+        items: [
+          { cmd: "htop", desc: "対話的プロセスビューア (↑↓選択, q 終了)" },
+          { cmd: "watch -n 1 date", desc: "1秒ごとにコマンドを再実行 (q 終了)" },
+          { cmd: "watch 'ls -l tmp'", desc: "ディレクトリの変化を監視" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "fun",
+    icon: "ghost",
+    group: "Linux",
+    title: "お楽しみコマンド",
+    accent: MAGENTA,
+    intro: "画面共有で確実にウケるやつ。技術力の無駄遣いを楽しもう。",
+    sections: [
+      {
+        title: "ドヤ系",
+        items: [
+          { cmd: "neofetch", desc: "ロゴ付きシステム情報 (起動直後に打つやつ)" },
+          { cmd: "cmatrix", desc: "マトリックスの世界へ (q で帰還)" },
+          { cmd: "figlet CLI DOJO", desc: "巨大アスキーアート文字" },
+          { cmd: "figlet HELLO | lolcat", desc: "虹色にする" },
+        ],
+      },
+      {
+        title: "癒し系",
+        items: [
+          { cmd: "cowsay こんにちは", desc: "牛がしゃべる" },
+          { cmd: "fortune", desc: "おみくじ (UNIX 格言)" },
+          { cmd: "fortune | cowsay", desc: "牛が格言を言う" },
+          { cmd: "fortune | cowsay | lolcat", desc: "虹色の牛が格言を言う (最終形態)" },
+          { cmd: "sl", desc: "ls のタイプミス。何を押しても止まらない" },
+          { cmd: "yes ドヤ", desc: "ひたすら繰り返す" },
+        ],
+      },
+    ],
+  },
 ];

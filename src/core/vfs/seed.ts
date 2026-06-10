@@ -363,6 +363,20 @@ export function buildInitialFS(): VFS {
     me(),
   );
   file(
+    "/home/guest/data/users.json",
+    JSON.stringify(
+      [
+        { id: 1, name: "Alice", email: "alice@example.com", age: 30, langs: ["go", "rust"] },
+        { id: 2, name: "Bob", email: "bob@example.org", age: 25, langs: ["python"] },
+        { id: 3, name: "Carol", email: "carol@example.com", age: 35, langs: ["typescript", "elixir"] },
+        { id: 4, name: "Dave", email: "dave@test.co.jp", age: 28, langs: [] },
+      ],
+      null,
+      2,
+    ) + "\n",
+    me(),
+  );
+  file(
     "/home/guest/data/access.log",
     [
       '192.168.1.50 - - [20/May/2026:09:17:23 +0900] "GET /index.html HTTP/1.1" 200 1043',
