@@ -22,6 +22,7 @@ import { gitCommands } from "./git";
 import { funCommands } from "./fun";
 import { extraCommands } from "./extras";
 import { challengeCommands } from "./challenge";
+import { learnCommands } from "./learn";
 
 const egrep: Command = { name: "egrep", summary: "grep -E と同じ", run: grep.run };
 const fgrep: Command = { name: "fgrep", summary: "grep -F と同じ", run: grep.run };
@@ -52,6 +53,7 @@ export const allCommands: Command[] = [
   ...funCommands,
   ...extraCommands,
   ...challengeCommands,
+  ...learnCommands,
 ];
 
 export function buildRegistry(): Map<string, Command> {

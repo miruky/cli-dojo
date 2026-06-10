@@ -13,6 +13,7 @@ import { MatrixApp } from "../apps/Matrix";
 import { TrainApp } from "../apps/Train";
 import { FzfApp } from "../apps/Fzf";
 import { WatchApp } from "../apps/Watch";
+import { QuizApp } from "../apps/Quiz";
 import type { LaunchPayload } from "../shell/types";
 import type { ModeId } from "../modes/types";
 
@@ -232,6 +233,11 @@ export class Pane {
             this.exitEditor();
           },
         }),
+      );
+    }
+    if (name === "quiz") {
+      return this.launchTermApp(
+        new QuizApp({ term: this.terminal, count: payload?.count ?? 10, onExit: () => this.exitEditor() }),
       );
     }
     if (name === "watch") {

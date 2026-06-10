@@ -30,6 +30,8 @@ export interface LaunchPayload {
   line?: string;
   /** 更新間隔 (秒, watch)。 */
   interval?: number;
+  /** 出題数 (quiz)。 */
+  count?: number;
 }
 
 export interface ExecContext {

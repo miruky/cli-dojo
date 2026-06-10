@@ -27,6 +27,7 @@ import { gitCommands } from "../core/shell/commands/git";
 import { funCommands } from "../core/shell/commands/fun";
 import { extraCommands } from "../core/shell/commands/extras";
 import { challengeCommands } from "../core/shell/commands/challenge";
+import { learnCommands } from "../core/shell/commands/learn";
 
 export interface RefEntry {
   cmd: string;
@@ -97,7 +98,7 @@ export const REFERENCE: RefGroup[] = [
   { title: "ページャ・全画面アプリ", accent: MAGENTA, commands: true, items: entries(pagerCommands) },
   { title: "diff・計算・ダンプ", accent: GREEN, commands: true, items: entries(extraCommands) },
   { title: "お楽しみ (ドヤ用)", accent: RED, commands: true, items: entries(funCommands) },
-  { title: "🥋 チャレンジ道場", accent: YELLOW, commands: true, items: entries(challengeCommands) },
+  { title: "🥋 チャレンジ道場", accent: YELLOW, commands: true, items: entries([...challengeCommands, ...learnCommands]) },
   { title: "対話モード起動", accent: RED, commands: true, items: entries(launcherCommands) },
 
   // ===== パイプレシピ (クリックでプロンプト挿入) =====

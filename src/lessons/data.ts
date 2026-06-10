@@ -607,12 +607,12 @@ export const LESSONS: Lesson[] = [
     group: "道場",
     title: "チャレンジ道場 (腕試し)",
     accent: YELLOW,
-    intro: "出題 → 端末で実際に解く → 自動判定。クリアするほど帯が上がる (白帯→黒帯)。進捗はブラウザに保存。",
+    intro: "全40問 + クイズ + vimtutor。出題 → 端末で実際に解く → 自動判定。クリアするほど帯が上がる (白帯→黒帯)。進捗はブラウザに保存。",
     sections: [
       {
         title: "道場の使い方",
         items: [
-          { cmd: "challenge", desc: "問題一覧と進捗を表示" },
+          { cmd: "challenge", desc: "問題一覧と進捗を表示 (全40問)" },
           { cmd: "challenge 1", desc: "問1 に挑戦 (出題を表示)" },
           { cmd: "check", desc: "操作系の問題を判定 (ファイル/権限/git の状態を検査)" },
           { cmd: "answer 42", desc: "回答系の問題に答える" },
@@ -627,7 +627,20 @@ export const LESSONS: Lesson[] = [
           { cmd: "challenge 7", desc: "テキスト・パイプ: grep / awk / sort / uniq で集計" },
           { cmd: "challenge 15", desc: "権限・システム: chmod / export / tar" },
           { cmd: "challenge 18", desc: "Git: ブランチ操作 / init→commit" },
-          { cmd: "challenge 20", desc: "スクリプト: 実行可能な .sh を作る" },
+          { cmd: "challenge 21", desc: "エディタ: vim/sed で置換・行削除・追記" },
+          { cmd: "challenge 25", desc: "正規表現: IP/電話番号/メールの抽出" },
+          { cmd: "challenge 29", desc: "検索: find でファイルを数える" },
+          { cmd: "challenge 32", desc: "JSON: jq で集計" },
+          { cmd: "challenge 34", desc: "awk 上級: 列の合計・条件集計" },
+          { cmd: "challenge 40", desc: "卒業試験: 抽出して保存" },
+        ],
+      },
+      {
+        title: "クイズ & チュートリアル",
+        items: [
+          { cmd: "quiz", desc: "LPIC風4択クイズ ランダム10問 (1〜4キーで回答・解説付き)" },
+          { cmd: "quiz 20", desc: "出題数を増やす (最大36問)" },
+          { cmd: "vimtutor", desc: "vim チュートリアル (実際に手を動かして学ぶ)" },
         ],
       },
     ],

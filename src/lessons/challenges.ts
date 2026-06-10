@@ -1,4 +1,5 @@
 import type { ExecContext } from "../core/shell/types";
+import type { VNode } from "../core/vfs/VFS";
 import { repoSnapshot } from "../core/shell/commands/git";
 
 /**
@@ -30,6 +31,26 @@ function fileLines(ctx: ExecContext, abs: string): string[] {
   const lines = node.content.split("\n");
   if (lines.length && lines[lines.length - 1] === "") lines.pop();
   return lines;
+}
+
+/** root 以下のファイルを条件付きで数える (find 系チャレンジの期待値計算)。 */
+function countFiles(
+  ctx: ExecContext,
+  root: string,
+  pred: (name: string, node: VNode) => boolean,
+): number {
+  let count = 0;
+  const walk = (abs: string, depth: number): void => {
+    const node = ctx.vfs.stat(abs);
+    if (!node || !node.children || depth > 12) return;
+    for (const [name, child] of node.children) {
+      const p = (abs === "/" ? "" : abs) + "/" + name;
+      if (child.type === "file" && pred(name, child)) count++;
+      if (child.type === "dir") walk(p, depth + 1);
+    }
+  };
+  walk(root, 0);
+  return count;
 }
 
 export const CHALLENGES: Challenge[] = [
@@ -274,17 +295,251 @@ export const CHALLENGES: Challenge[] = [
       return true;
     },
   },
+
+  // ===== エディタ (vim/emacs/sed どれで解いても OK) =====
+  {
+    id: 21, cat: "エディタ", level: 2,
+    title: "一括置換",
+    task: ["~/notes.md の「TODO」をすべて「DONE」に置き換えよ。", "vim の :%s/TODO/DONE/g でも、sed -i でも OK。check で判定。"],
+    hint: "vim notes.md → :%s/TODO/DONE/g → :wq  (または sed -i 's/TODO/DONE/g' notes.md)",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/notes.md`);
+      if (!n) return "~/notes.md がありません。";
+      if (n.content.includes("TODO")) return "まだ TODO が残っています。";
+      if (!n.content.includes("DONE")) return "DONE が見当たりません。置換できていますか?";
+      return true;
+    },
+  },
+  {
+    id: 22, cat: "エディタ", level: 2,
+    title: "エディタでファイルを書く",
+    task: ["~/training/memo.txt を作成し、1行目を「hello vim」にせよ。(前提: 問1)", "vim / emacs / echo どれでも OK。check で判定。"],
+    hint: "vim ~/training/memo.txt → i で挿入 → hello vim → Esc → :wq",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/training/memo.txt`);
+      if (!n || n.type !== "file") return "~/training/memo.txt がありません。";
+      const first = n.content.split("\n")[0];
+      if (first.trim() !== "hello vim") return `1行目が「${first}」です。「hello vim」にしてください。`;
+      return true;
+    },
+  },
+  {
+    id: 23, cat: "エディタ", level: 3,
+    title: "条件に合う行を消す",
+    task: ["~/todo.txt から「DONE」で始まる行をすべて削除せよ。TODO の行は残すこと。", "vim の dd でも :g/^DONE/d でも sed -i '/^DONE/d' でも OK。check で判定。"],
+    hint: "sed -i '/^DONE/d' todo.txt  (vim なら :g/^DONE/d)",
+    verify(ctx) {
+      const lines = fileLines(ctx, `${HOME}/todo.txt`);
+      if (lines.some((l) => l.startsWith("DONE"))) return "まだ DONE の行が残っています。";
+      if (!lines.some((l) => l.startsWith("TODO"))) return "TODO の行まで消えています。やりすぎです!";
+      return true;
+    },
+  },
+  {
+    id: 24, cat: "エディタ", level: 1,
+    title: "末尾に追記",
+    task: ["~/todo.txt の末尾に「TODO learn vim」という行を追加せよ。", ">> リダイレクトでも vim の G→o でも OK。check で判定。"],
+    hint: "echo 'TODO learn vim' >> todo.txt",
+    verify(ctx) {
+      const lines = fileLines(ctx, `${HOME}/todo.txt`);
+      if (lines[lines.length - 1]?.trim() !== "TODO learn vim") return "最後の行が「TODO learn vim」になっていません。";
+      return true;
+    },
+  },
+
+  // ===== 正規表現 =====
+  {
+    id: 25, cat: "正規表現", level: 2,
+    title: "IP らしき文字列を数える",
+    task: ["~/data/words.txt に「数字.数字.数字.数字」形式の文字列はいくつあるか?", "(値の範囲チェックは不要) answer <数> で回答。"],
+    hint: "grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' data/words.txt | wc -l",
+    answer: (ctx) => {
+      const m = (ctx.vfs.stat(`${HOME}/data/words.txt`)?.content ?? "").match(/\d+\.\d+\.\d+\.\d+/g);
+      return String(m?.length ?? 0);
+    },
+  },
+  {
+    id: 26, cat: "正規表現", level: 2,
+    title: "電話番号を抽出",
+    task: ["~/notes.md に書かれている XXX-XXXX-XXXX 形式の電話番号は? answer <番号> で回答。"],
+    hint: "grep -oE '[0-9]{3}-[0-9]{4}-[0-9]{4}' notes.md",
+    answer: (ctx) => /\d{3}-\d{4}-\d{4}/.exec(ctx.vfs.stat(`${HOME}/notes.md`)?.content ?? "")?.[0] ?? "",
+  },
+  {
+    id: 27, cat: "正規表現", level: 3,
+    title: "メールアドレスの数",
+    task: ["~/notes.md に含まれるメールアドレスはいくつ? answer <数> で回答。"],
+    hint: "grep -oE '[a-zA-Z0-9._]+@[a-zA-Z0-9.]+' notes.md | wc -l",
+    answer: (ctx) => {
+      const m = (ctx.vfs.stat(`${HOME}/notes.md`)?.content ?? "").match(/[a-zA-Z0-9._]+@[a-zA-Z0-9.-]+\.[a-z]+/g);
+      return String(m?.length ?? 0);
+    },
+  },
+  {
+    id: 28, cat: "正規表現", level: 2,
+    title: "POST リクエストを数える",
+    task: ["~/data/access.log の POST リクエストは何件か? answer <数> で回答。"],
+    hint: "grep -c '\"POST ' data/access.log",
+    answer: (ctx) => String(fileLines(ctx, `${HOME}/data/access.log`).filter((l) => l.includes('"POST ')).length),
+  },
+
+  // ===== 検索 (find) =====
+  {
+    id: 29, cat: "検索", level: 2,
+    title: "CSV を探せ",
+    task: ["ホームディレクトリ以下に .csv ファイルはいくつあるか? answer <数> で回答。"],
+    hint: "find ~ -name '*.csv' | wc -l",
+    answer: (ctx) => String(countFiles(ctx, HOME, (name) => name.endsWith(".csv"))),
+  },
+  {
+    id: 30, cat: "検索", level: 2,
+    title: "/etc の conf 系ファイル",
+    task: ["/etc 以下で、名前に「conf」を含むファイルはいくつあるか? answer <数> で回答。"],
+    hint: "find /etc -type f -name '*conf*' | wc -l",
+    answer: (ctx) => String(countFiles(ctx, "/etc", (name) => name.includes("conf"))),
+  },
+  {
+    id: 31, cat: "検索", level: 3,
+    title: "大きいファイルを探せ",
+    task: ["ホームディレクトリ以下で 1000 バイトを超えるファイルはいくつあるか? answer <数> で回答。"],
+    hint: "find ~ -type f -size +1000c | wc -l",
+    answer: (ctx) => String(countFiles(ctx, HOME, (_n, node) => node.content.length > 1000)),
+  },
+
+  // ===== JSON =====
+  {
+    id: 32, cat: "JSON", level: 2,
+    title: "配列の要素数",
+    task: ["~/data/users.json の配列には何人分のデータがあるか? answer <数> で回答。"],
+    hint: "jq length data/users.json (または cat data/users.json | jq length)",
+    answer: (ctx) => {
+      try {
+        const arr = JSON.parse(ctx.vfs.stat(`${HOME}/data/users.json`)?.content ?? "[]") as unknown[];
+        return String(arr.length);
+      } catch {
+        return "";
+      }
+    },
+  },
+  {
+    id: 33, cat: "JSON", level: 3,
+    title: "30歳以上は何人?",
+    task: ["~/data/users.json で age が 30 以上の人数は? answer <数> で回答。"],
+    hint: "jq '.[] | .age' data/users.json で全員の age を見て数える",
+    answer: (ctx) => {
+      try {
+        const arr = JSON.parse(ctx.vfs.stat(`${HOME}/data/users.json`)?.content ?? "[]") as Array<{ age: number }>;
+        return String(arr.filter((u) => u.age >= 30).length);
+      } catch {
+        return "";
+      }
+    },
+  },
+
+  // ===== awk 上級 =====
+  {
+    id: 34, cat: "awk 上級", level: 3,
+    title: "転送量の合計",
+    task: ["~/data/access.log の最終列 (転送バイト数) の合計は? answer <数> で回答。"],
+    hint: "awk '{s+=$10} END {print s}' data/access.log",
+    answer: (ctx) =>
+      String(fileLines(ctx, `${HOME}/data/access.log`).reduce((s, l) => {
+        const parts = l.split(" ");
+        return s + (parseInt(parts[parts.length - 1], 10) || 0);
+      }, 0)),
+  },
+  {
+    id: 35, cat: "awk 上級", level: 3,
+    title: "english の合計点",
+    task: ["~/data/scores.csv で subject が english の score 合計は? answer <数> で回答。"],
+    hint: "awk -F, '$2==\"english\" {s+=$3} END {print s}' data/scores.csv",
+    answer: (ctx) =>
+      String(fileLines(ctx, `${HOME}/data/scores.csv`).slice(1).reduce((s, l) => {
+        const [, subject, score] = l.split(",");
+        return subject === "english" ? s + (parseInt(score, 10) || 0) : s;
+      }, 0)),
+  },
+  {
+    id: 36, cat: "awk 上級", level: 2,
+    title: "WARN の行数",
+    task: ["~/logs/app.log の WARN は何行か? answer <数> で回答。"],
+    hint: "grep -c WARN logs/app.log (awk '/WARN/{c++} END{print c}' でも)",
+    answer: (ctx) => String(fileLines(ctx, `${HOME}/logs/app.log`).filter((l) => l.includes("WARN")).length),
+  },
+
+  // ===== スクリプト・複合 =====
+  {
+    id: 37, cat: "スクリプト", level: 3,
+    title: "引数を使うスクリプト",
+    task: [
+      "~/bin/count.sh を作成せよ。条件:",
+      "  1. 第1引数 ($1) のファイルの行数を表示する (wc -l を使う)",
+      "  2. 実行権限が付いている",
+      "check で判定。",
+    ],
+    hint: "echo 'wc -l \"$1\"' > ~/bin/count.sh && chmod +x ~/bin/count.sh → ./bin/count.sh todo.txt で試す",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/bin/count.sh`);
+      if (!n || n.type !== "file") return "~/bin/count.sh がありません。";
+      if (!n.content.includes("$1")) return "count.sh が引数 $1 を使っていません。";
+      if (!n.content.includes("wc")) return "count.sh に wc がありません。";
+      if ((n.mode & 0o100) === 0) return "実行権限がありません。chmod +x ~/bin/count.sh";
+      return true;
+    },
+  },
+  {
+    id: 38, cat: "スクリプト", level: 2,
+    title: "エイリアスを作る",
+    task: ["ll2 という名前で「ls -la」のエイリアスを作成せよ。check で判定。"],
+    hint: "alias ll2='ls -la' (alias だけ打つと一覧が見える)",
+    verify(ctx) {
+      const a = ctx.services.aliases().get("ll2");
+      if (!a) return "ll2 というエイリアスがありません。";
+      if (!a.includes("ls") || !a.includes("-la")) return `ll2='${a}' になっています。'ls -la' にしてください。`;
+      return true;
+    },
+  },
+  {
+    id: 39, cat: "スクリプト", level: 2,
+    title: "深い階層を一発で",
+    task: ["~/training/a/b/c という3階層のディレクトリを 1 コマンドで作成せよ。check で判定。"],
+    hint: "mkdir -p ~/training/a/b/c (-p が親ごと作るオプション)",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/training/a/b/c`);
+      if (!n || n.type !== "dir") return "~/training/a/b/c がまだありません。";
+      return true;
+    },
+  },
+  {
+    id: 40, cat: "スクリプト", level: 3,
+    title: "抽出して保存 (卒業試験)",
+    task: [
+      "~/data/access.log からステータス 401 の行だけを抜き出して、",
+      "~/report.txt に保存せよ。check で判定。",
+    ],
+    hint: "grep ' 401 ' data/access.log > ~/report.txt",
+    verify(ctx) {
+      const n = ctx.vfs.stat(`${HOME}/report.txt`);
+      if (!n || n.type !== "file") return "~/report.txt がありません。";
+      const lines = fileLines(ctx, `${HOME}/report.txt`);
+      const expected = fileLines(ctx, `${HOME}/data/access.log`).filter((l) => l.split(" ")[8] === "401");
+      if (lines.length === 0) return "report.txt が空です。";
+      if (!lines.every((l) => l.includes(" 401 "))) return "401 以外の行が混ざっています。";
+      if (lines.length !== expected.length) return `401 の行は ${expected.length} 行あります (現在 ${lines.length} 行)。`;
+      return true;
+    },
+  },
 ];
 
 /** 帯ランク (クリア数 → 称号)。 */
 export const BELTS: Array<[number, string, string]> = [
   // [必要クリア数, 帯, 色ANSI]
   [0, "白帯", "\x1b[38;2;230;234;245m"],
-  [4, "黄帯", "\x1b[38;2;255;198;0m"],
-  [8, "緑帯", "\x1b[38;2;126;214;126m"],
-  [12, "青帯", "\x1b[38;2;120;170;255m"],
-  [16, "茶帯", "\x1b[38;2;200;140;80m"],
-  [20, "黒帯 (師範)", "\x1b[1m\x1b[38;2;240;244;255m"],
+  [8, "黄帯", "\x1b[38;2;255;198;0m"],
+  [16, "緑帯", "\x1b[38;2;126;214;126m"],
+  [24, "青帯", "\x1b[38;2;120;170;255m"],
+  [32, "茶帯", "\x1b[38;2;200;140;80m"],
+  [40, "黒帯 (師範)", "\x1b[1m\x1b[38;2;240;244;255m"],
 ];
 
 export function beltFor(cleared: number): [string, string] {

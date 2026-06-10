@@ -82,7 +82,8 @@ export class TerminalView {
         yellow("git status") + dim("   ") + yellow("htop") + dim("   ") + yellow("man ls") + dim("   ") + yellow("help"),
     );
     t.writeln(
-      "  " + dim("腕試しは ") + yellow("challenge") + dim(" — 出題を解いて帯を上げよう (白帯→黒帯)。"),
+      "  " + dim("腕試しは ") + yellow("challenge") + dim(" (全40問で帯が上がる) / ") +
+        yellow("quiz") + dim(" (4択) / ") + yellow("vimtutor") + dim("。"),
     );
     t.writeln("  " + dim("左上の ☰ からモード切替 / レッスンへ。Tab 補完・↑↓履歴・Ctrl-R 検索対応。"));
     t.writeln("");
