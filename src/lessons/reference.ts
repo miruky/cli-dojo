@@ -26,6 +26,7 @@ import { modernCommands } from "../core/shell/commands/modern";
 import { gitCommands } from "../core/shell/commands/git";
 import { funCommands } from "../core/shell/commands/fun";
 import { extraCommands } from "../core/shell/commands/extras";
+import { challengeCommands } from "../core/shell/commands/challenge";
 
 export interface RefEntry {
   cmd: string;
@@ -96,7 +97,26 @@ export const REFERENCE: RefGroup[] = [
   { title: "ページャ・全画面アプリ", accent: MAGENTA, commands: true, items: entries(pagerCommands) },
   { title: "diff・計算・ダンプ", accent: GREEN, commands: true, items: entries(extraCommands) },
   { title: "お楽しみ (ドヤ用)", accent: RED, commands: true, items: entries(funCommands) },
+  { title: "🥋 チャレンジ道場", accent: YELLOW, commands: true, items: entries(challengeCommands) },
   { title: "対話モード起動", accent: RED, commands: true, items: entries(launcherCommands) },
+
+  // ===== パイプレシピ (クリックでプロンプト挿入) =====
+  {
+    title: "🔗 パイプ実践レシピ",
+    accent: CYAN,
+    items: [
+      { cmd: "ls -la | grep '^d'", desc: "ディレクトリだけ表示" },
+      { cmd: "ls -la | sort -k5 -nr | head -3", desc: "大きいファイル トップ3" },
+      { cmd: "ps aux | grep nginx", desc: "プロセスを名前で探す" },
+      { cmd: "history | grep git", desc: "打ったコマンドを検索" },
+      { cmd: "grep -c ERROR logs/app.log", desc: "エラー行数を数える" },
+      { cmd: "awk '{print $1}' data/access.log | sort | uniq -c | sort -nr | head -5", desc: "IP別アクセス数トップ5" },
+      { cmd: "grep ' 401 ' data/access.log | awk '{print $1}' | sort -u", desc: "認証失敗IPの一覧" },
+      { cmd: "du -s * | sort -n | tail -3", desc: "大きいディレクトリ トップ3" },
+      { cmd: "find . -name '*.log' | xargs wc -l", desc: "ログの行数をまとめて" },
+      { cmd: "sort data/fruits.txt | uniq -c | sort -nr", desc: "出現回数ランキング" },
+    ],
+  },
 
   // ===== キーバインド (クリック不可) =====
   {

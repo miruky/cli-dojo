@@ -373,7 +373,63 @@ const w: Command = {
   },
 };
 
+const pgrep: Command = {
+  name: "pgrep",
+  summary: "名前でプロセスを探して PID を表示",
+  run(ctx) {
+    const args = ctx.args.slice(1);
+    const full = args.includes("-f");
+    const listName = args.includes("-l");
+    const pattern = args.filter((a) => !a.startsWith("-"))[0];
+    if (!pattern) {
+      ctx.err("pgrep: パターンを指定してください (例: pgrep nginx)\n");
+      return 2;
+    }
+    let re: RegExp;
+    try {
+      re = new RegExp(pattern);
+    } catch {
+      ctx.err(`pgrep: 正規表現エラー: ${pattern}\n`);
+      return 2;
+    }
+    let hit = false;
+    for (const p of PROCS) {
+      const name = p.cmd.replace(/^-/, "").split(/[\s:]/)[0].split("/").pop() ?? "";
+      if (full ? re.test(p.cmd) : re.test(name)) {
+        ctx.out(listName ? `${p.pid} ${name}\n` : `${p.pid}\n`);
+        hit = true;
+      }
+    }
+    return hit ? 0 : 1;
+  },
+};
+
+const pkill: Command = {
+  name: "pkill",
+  summary: "名前でプロセスへシグナル送信 (模擬)",
+  run(ctx) {
+    const pattern = ctx.args.slice(1).filter((a) => !a.startsWith("-"))[0];
+    if (!pattern) {
+      ctx.err("pkill: パターンを指定してください\n");
+      return 2;
+    }
+    let re: RegExp;
+    try {
+      re = new RegExp(pattern);
+    } catch {
+      ctx.err(`pkill: 正規表現エラー: ${pattern}\n`);
+      return 2;
+    }
+    const hits = PROCS.filter((p) => re.test(p.cmd.replace(/^-/, "").split(/[\s:]/)[0].split("/").pop() ?? ""));
+    if (hits.length === 0) return 1;
+    // 模擬: 実際には消さず、何が起きるかを伝える
+    for (const p of hits) ctx.out(`pkill: ${p.pid} (${p.cmd}) に SIGTERM を送信 (模擬)\n`);
+    return 0;
+  },
+};
+
 export const sysinfoCommands: Command[] = [
   ps, top, kill, killall, jobs, bg, fg, nice, sleepCmd,
   df, free, uptime, mount, lsblk, lsof, dmesg, sysctl, lscpu, who, w,
+  pgrep, pkill,
 ];

@@ -465,6 +465,29 @@ const factor: Command = {
   },
 };
 
+const time: Command = {
+  name: "time",
+  summary: "コマンドの実行時間を計測",
+  run(ctx) {
+    const argv = ctx.args.slice(1);
+    if (argv.length === 0) {
+      ctx.out("real\t0m0.000s\nuser\t0m0.000s\nsys\t0m0.000s\n");
+      return 0;
+    }
+    const t0 = performance.now();
+    const r = ctx.services.runArgv(argv, ctx.stdin);
+    const elapsed = (performance.now() - t0) / 1000;
+    ctx.out(r.stdout);
+    if (r.stderr) ctx.err(r.stderr);
+    const fmtT = (s: number): string => `${Math.floor(s / 60)}m${(s % 60).toFixed(3)}s`;
+    const timing = `\nreal\t${fmtT(elapsed)}\nuser\t${fmtT(elapsed * 0.7)}\nsys\t${fmtT(elapsed * 0.2)}\n`;
+    // stderr は即時表示で stdout のバッファより先に出てしまうため、tty では out に流す
+    if (ctx.tty) ctx.out(timing);
+    else ctx.err(timing);
+    return r.code;
+  },
+};
+
 export const extraCommands: Command[] = [
-  diff, cmp, bc, expr, cal, shuf, yes, xxd, hexdump, od, strings, split, fmt, whatis, apropos, factor,
+  diff, cmp, bc, expr, cal, shuf, yes, xxd, hexdump, od, strings, split, fmt, whatis, apropos, factor, time,
 ];

@@ -81,6 +81,12 @@ function importRepo(vfs: VFS, root: string): Repo {
   return repo;
 }
 
+/** チャレンジ判定用: リポジトリの現在ブランチとコミット数を覗く。 */
+export function repoSnapshot(vfs: VFS, root: string): { head: string; commits: number } | null {
+  const r = repoTable(vfs).get(root);
+  return r ? { head: r.head, commits: r.commits.size } : null;
+}
+
 /**
  * seed に .git を持つディレクトリをシェル起動時に取り込んでおく。
  * 「編集してから初めて git を打つと初期コミットに編集後が入る」事故を防ぐ。

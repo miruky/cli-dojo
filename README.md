@@ -31,6 +31,10 @@ npm run preview  # ビルド結果のプレビュー
 
 - **本物のシェル**: 仮想FS上で 200+ コマンド (ls/grep/sed/awk/find/tar/chmod/systemctl…)、
   パイプ・リダイレクト・`&&`/`||`・glob・ブレース・コマンド置換・`$(())` 算術。
+- **チャレンジ道場**: `challenge` で出題 → 端末で実際に解く → `check`/`answer` で自動判定。
+  クリア数で帯が上がる (白帯→黒帯)。進捗は localStorage に保存。
+- **パイプ実践レシピ**: `ls -la | grep '^d'` からログ集計ワンライナーまで、
+  クリックで端末に流し込める実務レシピ集。
 - **Git (本当に動く)**: init/status/add/commit/log/diff/show/branch/checkout が VFS 上で動作。
   ブランチ切替で作業ツリーも書き換わる。
 - **全画面 TUI アプリ**: `man`/`less` (検索付きページャ)、`htop` (リアルタイム更新)、

@@ -81,6 +81,9 @@ export class TerminalView {
       "    " + yellow("neofetch") + dim("   ") + yellow("ls -la") + dim("   ") +
         yellow("git status") + dim("   ") + yellow("htop") + dim("   ") + yellow("man ls") + dim("   ") + yellow("help"),
     );
+    t.writeln(
+      "  " + dim("腕試しは ") + yellow("challenge") + dim(" — 出題を解いて帯を上げよう (白帯→黒帯)。"),
+    );
     t.writeln("  " + dim("左上の ☰ からモード切替 / レッスンへ。Tab 補完・↑↓履歴・Ctrl-R 検索対応。"));
     t.writeln("");
   }

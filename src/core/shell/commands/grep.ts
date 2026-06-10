@@ -62,7 +62,9 @@ export const grep: Command = {
         break;
       }
       if (a.length > 2 && a.startsWith("--")) {
-        if (a.startsWith("--color")) color = !a.includes("=never");
+        if (a.startsWith("--color"))
+          // =auto はパイプ先を汚さないよう tty のときだけ色付け
+          color = a.includes("=never") ? false : a.includes("=always") ? true : ctx.tty;
         else if (a === "--invert-match") invert = true;
         else if (a === "--ignore-case") ignoreCase = true;
         else if (a === "--line-number") showNum = true;
